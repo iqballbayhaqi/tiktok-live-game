@@ -1,0 +1,488 @@
+<section id="floating-photos" class="config-section">
+    <h2><i class="fas fa-images"></i> Floating Photos</h2>
+    
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button type="button" class="tab-btn active" data-tab="floating-photos">
+            <i class="fas fa-images"></i> Floating Photos
+        </button>
+        <button type="button" class="tab-btn" data-tab="firework-photos">
+            <i class="fas fa-fire"></i> Firework Photos
+        </button>
+        <button type="button" class="tab-btn" data-tab="jedag-jedug">
+            <i class="fas fa-music"></i> Jedag Jedug
+        </button>
+    </div>
+
+    <!-- Tab Content: Floating Photos -->
+    <div class="tab-content active" id="tab-floating-photos">
+        <div class="subsection">
+            <h3><i class="fas fa-cog"></i> General Settings</h3>
+            <div class="form-grid">
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="floatingPhotos.randomColor" id="floatingPhotosRandomColor">
+                        <span>Random Color</span>
+                    </label>
+                    <small class="form-text">Aktifkan untuk menggunakan warna acak dari color palette</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="floatingPhotosMaxPhotos">Max Photos</label>
+                    <input type="number" name="floatingPhotos.maxPhotos" id="floatingPhotosMaxPhotos" min="10" max="500" value="100" class="form-control">
+                    <small class="form-text">Jumlah maksimal floating photos yang dapat ditampilkan secara bersamaan (10-500). Default: 100</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-palette"></i> Color Palette</h3>
+            <p class="form-text">Tambahkan warna untuk efek glow pada floating photos</p>
+            <div id="colorPaletteContainer"></div>
+            <button type="button" class="btn btn-secondary" id="addColorPalette"><i class="fas fa-plus"></i> Tambah Warna</button>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-gift"></i> Floating Photos Effect</h3>
+            <p class="form-text">Konfigurasi efek floating photo yang muncul saat gift tertentu diterima</p>
+            
+            <div class="form-grid">
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="giftFloatingPhotos.enabled" id="giftFloatingPhotosEnabled">
+                        <span>Aktifkan Floating Photos Effect untuk Gift Tertentu</span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftFloatingPhotosGifts">Daftar Gift</label>
+                    <div class="custom-dropdown" id="giftFloatingPhotosDropdown">
+                        <button type="button" class="dropdown-trigger" id="giftFloatingPhotosTrigger">
+                            <span class="dropdown-text">Klik untuk memilih gift</span>
+                            <span class="dropdown-badge hidden" id="giftFloatingPhotosBadge">0 dipilih</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu" id="giftFloatingPhotosMenu">
+                            <div class="dropdown-search">
+                                <input type="text" class="dropdown-search-input" placeholder="Cari gift..." id="giftFloatingPhotosSearch">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="dropdown-list" id="giftFloatingPhotosList">
+                                <!-- Options akan diisi oleh JavaScript -->
+                            </div>
+                        </div>
+                        <select name="giftFloatingPhotos.gifts" id="giftFloatingPhotosGifts" multiple style="display: none;">
+                            <!-- Hidden select untuk form submission -->
+                        </select>
+                    </div>
+                    <small class="form-text">Klik untuk memilih satu atau lebih gift. Gift yang terdaftar akan memicu floating photo dengan foto profile pengirim.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-play-circle"></i> Simulasi</h3>
+            <p class="form-text">Uji coba efek floating photos secara langsung di overlay</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="simulateFloatingPhotoEmoji">Emoji (Opsional)</label>
+                    <input type="text" id="simulateFloatingPhotoEmoji" class="form-control" placeholder="Contoh: 🎉, ⭐, 💫" maxlength="2">
+                    <small class="form-text">Masukkan emoji yang akan ditampilkan. Kosongkan untuk menggunakan emoji default.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="simulateFloatingPhotoImageUrl">URL Gambar (Opsional)</label>
+                    <input type="text" id="simulateFloatingPhotoImageUrl" class="form-control" placeholder="/assets/images/tiktok-default-photo.jpg" value="/assets/images/tiktok-default-photo.jpg">
+                    <small class="form-text">Masukkan URL gambar profil. Default menggunakan gambar TikTok. Jika kosong, akan menggunakan emoji.</small>
+                </div>
+                
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary" id="simulateFloatingPhotoBtn">
+                        <i class="fas fa-rocket"></i> Summon Floating Photo
+                    </button>
+                    <small class="form-text">Klik untuk mengirim simulasi floating photo ke overlay. Pastikan overlay sudah terbuka.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content: Firework Photos -->
+    <div class="tab-content" id="tab-firework-photos">
+        <!-- Card: Aktifasi & Pilihan Gift -->
+        <div class="subsection">
+            <h3><i class="fas fa-toggle-on"></i> Aktifasi & Pilihan Gift</h3>
+            <p class="form-text">Aktifkan efek firework dan pilih gift yang akan memicu efek</p>
+            
+            <div class="form-grid">
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="giftFirework.enabled" id="giftFireworkEnabled">
+                        <span>Aktifkan Firework Effect untuk Gift Tertentu</span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label>Mode Pilihan Gift</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="giftFirework.selectionMode" value="manual" id="giftFireworkModeManual" checked>
+                            <span>Pilih Gift Manual</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="giftFirework.selectionMode" value="coinRange" id="giftFireworkModeCoinRange">
+                            <span>Pilih Berdasarkan Range Coin</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="giftFireworkGiftsGroup">
+                    <label for="giftFireworkGifts">Daftar Gift</label>
+                    <div class="custom-dropdown" id="giftFireworkDropdown">
+                        <button type="button" class="dropdown-trigger" id="giftFireworkTrigger">
+                            <span class="dropdown-text">Klik untuk memilih gift</span>
+                            <span class="dropdown-badge hidden" id="giftFireworkBadge">0 dipilih</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu" id="giftFireworkMenu">
+                            <div class="dropdown-search">
+                                <input type="text" class="dropdown-search-input" placeholder="Cari gift..." id="giftFireworkSearch">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="dropdown-list" id="giftFireworkList">
+                                <!-- Options akan diisi oleh JavaScript -->
+                            </div>
+                        </div>
+                        <select name="giftFirework.gifts" id="giftFireworkGifts" multiple style="display: none;">
+                            <!-- Hidden select untuk form submission -->
+                        </select>
+                    </div>
+                    <small class="form-text">Klik untuk memilih satu atau lebih gift. Gift yang terdaftar akan memicu firework effect dengan foto profile pengirim.</small>
+                </div>
+                
+                <div class="form-group" id="giftFireworkCoinRangeGroup" style="display: none;">
+                    <label>Range Coin</label>
+                    <div class="coin-range-wrapper">
+                        <div class="coin-range-item">
+                            <label for="giftFireworkCoinMin">Min Coin</label>
+                            <input type="number" name="giftFirework.coinMin" id="giftFireworkCoinMin" min="0" class="form-control" placeholder="0">
+                        </div>
+                        <span class="coin-range-separator">-</span>
+                        <div class="coin-range-item">
+                            <label for="giftFireworkCoinMax">Max Coin</label>
+                            <input type="number" name="giftFirework.coinMax" id="giftFireworkCoinMax" min="0" class="form-control" placeholder="Tidak terbatas">
+                        </div>
+                    </div>
+                    <small class="form-text">Gift dengan coin dalam range ini akan memicu firework effect. Kosongkan max untuk tidak terbatas.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Pengaturan Efek & Posisi -->
+        <div class="subsection">
+            <h3><i class="fas fa-cog"></i> Pengaturan Efek & Posisi</h3>
+            <p class="form-text">Konfigurasi jumlah foto dan posisi efek firework</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="giftFireworkCount">Jumlah Foto dalam Firework</label>
+                    <input type="number" name="giftFirework.count" id="giftFireworkCount" min="5" max="50" value="20" class="form-control">
+                    <small class="form-text">Jumlah foto/emoji yang akan muncul dalam efek firework (5-50)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftFireworkCenterX">Posisi X (Center)</label>
+                    <input type="number" name="giftFirework.centerX" id="giftFireworkCenterX" min="0" max="1920" value="960" class="form-control">
+                    <small class="form-text">Posisi horizontal untuk pusat firework (0-1920). Kosongkan untuk tengah layar.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftFireworkCenterY">Posisi Y (Center)</label>
+                    <input type="number" name="giftFirework.centerY" id="giftFireworkCenterY" min="0" max="1080" value="540" class="form-control">
+                    <small class="form-text">Posisi vertikal untuk pusat firework (0-1080). Kosongkan untuk tengah layar.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Pengaturan Animasi -->
+        <div class="subsection">
+            <h3><i class="fas fa-magic"></i> Pengaturan Animasi</h3>
+            <p class="form-text">Konfigurasi animasi scale dan fade out untuk efek firework</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="giftFireworkInitialScale">Ukuran Awal (Initial Scale)</label>
+                    <input type="number" name="giftFirework.initialScale" id="giftFireworkInitialScale" min="0.1" max="1" step="0.1" value="0.1" class="form-control">
+                    <small class="form-text">Ukuran awal foto saat muncul (0.1 = kecil, 1.0 = normal). Foto akan membesar dari ukuran ini ke ukuran normal.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftFireworkScaleDuration">Durasi Animasi Scale (ms)</label>
+                    <input type="number" name="giftFirework.scaleDuration" id="giftFireworkScaleDuration" min="100" max="2000" step="50" value="300" class="form-control">
+                    <small class="form-text">Durasi animasi dari ukuran kecil ke normal dalam milidetik (100-2000ms)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftFireworkFadeOutDuration">Durasi Sebelum Fade Out (ms)</label>
+                    <input type="number" name="giftFirework.fadeOutDuration" id="giftFireworkFadeOutDuration" min="1000" max="30000" step="500" value="5000" class="form-control">
+                    <small class="form-text">Waktu sebelum foto mulai menghilang (1000-30000ms). Default: 5000ms (5 detik)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-play-circle"></i> Simulasi</h3>
+            <p class="form-text">Uji coba efek firework secara langsung di overlay</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="simulateFireworkEmoji">Emoji (Opsional)</label>
+                    <input type="text" id="simulateFireworkEmoji" class="form-control" placeholder="Contoh: 🎉, ⭐, 💫" maxlength="2">
+                    <small class="form-text">Masukkan emoji yang akan ditampilkan. Kosongkan untuk menggunakan emoji default.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="simulateFireworkImageUrl">URL Gambar (Opsional)</label>
+                    <input type="text" id="simulateFireworkImageUrl" class="form-control" placeholder="/assets/images/tiktok-default-photo.jpg" value="/assets/images/tiktok-default-photo.jpg">
+                    <small class="form-text">Masukkan URL gambar profil. Default menggunakan gambar TikTok. Jika kosong, akan menggunakan emoji.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="simulateFireworkCount">Jumlah Foto</label>
+                    <input type="number" id="simulateFireworkCount" class="form-control" min="5" max="50" value="20">
+                    <small class="form-text">Jumlah foto/emoji yang akan muncul dalam efek firework (5-50)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="simulateFireworkCenterX">Posisi X (Center)</label>
+                    <input type="number" id="simulateFireworkCenterX" class="form-control" min="0" max="1920" placeholder="960" value="960">
+                    <small class="form-text">Posisi horizontal untuk pusat firework (0-1920). Kosongkan untuk tengah layar.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="simulateFireworkCenterY">Posisi Y (Center)</label>
+                    <input type="number" id="simulateFireworkCenterY" class="form-control" min="0" max="1080" placeholder="540" value="540">
+                    <small class="form-text">Posisi vertikal untuk pusat firework (0-1080). Kosongkan untuk tengah layar.</small>
+                </div>
+                
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary" id="simulateFireworkBtn">
+                        <i class="fas fa-rocket"></i> Summon Firework
+                    </button>
+                    <small class="form-text">Klik untuk mengirim simulasi firework ke overlay. Pastikan overlay sudah terbuka.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content: Jedag Jedug -->
+    <div class="tab-content" id="tab-jedag-jedug">
+        <!-- Card: Aktifasi & Pilihan Gift -->
+        <div class="subsection">
+            <h3><i class="fas fa-toggle-on"></i> Aktifasi & Pilihan Gift</h3>
+            <p class="form-text">Aktifkan efek jedag jedug dan pilih gift yang akan memicu efek</p>
+            
+            <div class="form-grid">
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="giftJedagJedug.enabled" id="giftJedagJedugEnabled">
+                        <span>Aktifkan Jedag Jedug Effect untuk Gift Tertentu</span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label>Mode Pilihan Gift</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="giftJedagJedug.selectionMode" value="manual" id="giftJedagJedugModeManual" checked>
+                            <span>Pilih Gift Manual</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="giftJedagJedug.selectionMode" value="coinRange" id="giftJedagJedugModeCoinRange">
+                            <span>Pilih Berdasarkan Range Coin</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="giftJedagJedugGiftsGroup">
+                    <label for="giftJedagJedugGifts">Daftar Gift</label>
+                    <div class="custom-dropdown" id="giftJedagJedugDropdown">
+                        <button type="button" class="dropdown-trigger" id="giftJedagJedugTrigger">
+                            <span class="dropdown-text">Klik untuk memilih gift</span>
+                            <span class="dropdown-badge hidden" id="giftJedagJedugBadge">0 dipilih</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu" id="giftJedagJedugMenu">
+                            <div class="dropdown-search">
+                                <input type="text" class="dropdown-search-input" placeholder="Cari gift..." id="giftJedagJedugSearch">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="dropdown-list" id="giftJedagJedugList">
+                                <!-- Options akan diisi oleh JavaScript -->
+                            </div>
+                        </div>
+                        <select name="giftJedagJedug.gifts" id="giftJedagJedugGifts" multiple style="display: none;">
+                            <!-- Hidden select untuk form submission -->
+                        </select>
+                    </div>
+                    <small class="form-text">Klik untuk memilih satu atau lebih gift. Jika kosong, efek akan trigger untuk semua gift. Gift yang terdaftar akan memicu jedag jedug effect dengan foto profile pengirim.</small>
+                </div>
+                
+                <div class="form-group" id="giftJedagJedugCoinRangeGroup" style="display: none;">
+                    <label>Range Coin</label>
+                    <div class="coin-range-wrapper">
+                        <div class="coin-range-item">
+                            <label for="giftJedagJedugCoinMin">Min Coin</label>
+                            <input type="number" name="giftJedagJedug.coinMin" id="giftJedagJedugCoinMin" min="0" class="form-control" placeholder="0">
+                        </div>
+                        <span class="coin-range-separator">-</span>
+                        <div class="coin-range-item">
+                            <label for="giftJedagJedugCoinMax">Max Coin</label>
+                            <input type="number" name="giftJedagJedug.coinMax" id="giftJedagJedugCoinMax" min="0" class="form-control" placeholder="Tidak terbatas">
+                        </div>
+                    </div>
+                    <small class="form-text">Gift dengan coin dalam range ini akan memicu jedag jedug effect. Kosongkan max untuk tidak terbatas. Jika kosong, efek akan trigger untuk semua gift.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Pengaturan Efek & Posisi -->
+        <div class="subsection">
+            <h3><i class="fas fa-cog"></i> Pengaturan Efek & Posisi</h3>
+            <p class="form-text">Konfigurasi durasi, volume, dan posisi efek jedag jedug</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="giftJedagJedugDuration">Durasi Efek (ms)</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="number" name="giftJedagJedug.duration" id="giftJedagJedugDuration" min="1000" max="30000" step="500" value="5000" class="form-control" style="flex: 1;">
+                        <button type="button" class="btn btn-secondary btn-small" id="syncJedagJedugDuration" title="Sesuaikan durasi dengan lama lagu yang dipilih" style="white-space: nowrap; padding: 10px 16px; font-size: 14px; height: auto; display: inline-flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-sync-alt"></i> Sync
+                        </button>
+                    </div>
+                    <small class="form-text">Durasi efek jedag jedug dan musik dalam milidetik (1000-30000ms). Default: 5000ms (5 detik). Klik tombol "Sync" untuk menyesuaikan durasi dengan lama lagu yang dipilih.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugVolume">Volume Musik (0.0 - 1.0)</label>
+                    <input type="number" name="giftJedagJedug.volume" id="giftJedagJedugVolume" min="0" max="1" step="0.1" value="0.7" class="form-control">
+                    <small class="form-text">Volume musik jedag jedug (0.0 = silent, 1.0 = full volume). Default: 0.7</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugCenterX">Posisi X (Center)</label>
+                    <input type="number" name="giftJedagJedug.centerX" id="giftJedagJedugCenterX" min="0" max="1920" class="form-control" placeholder="Kosongkan untuk tengah layar">
+                    <small class="form-text">Posisi horizontal untuk pusat efek (0-1920). Kosongkan untuk tengah layar.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugCenterY">Posisi Y (Center)</label>
+                    <input type="number" name="giftJedagJedug.centerY" id="giftJedagJedugCenterY" min="0" max="1080" class="form-control" placeholder="Kosongkan untuk tengah layar">
+                    <small class="form-text">Posisi vertikal untuk pusat efek (0-1080). Kosongkan untuk tengah layar.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Pengaturan Musik -->
+        <div class="subsection">
+            <h3><i class="fas fa-music"></i> Pengaturan Musik</h3>
+            <p class="form-text">Pilih lagu yang akan diputar saat efek jedag jedug aktif</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="giftJedagJedugMusicPath">Pilih Lagu</label>
+                    <select name="giftJedagJedug.musicPath" id="giftJedagJedugMusicPath" class="form-control">
+                        <option value="/assets/music/jedag-jedug.mp3" data-duration="14000">Jedag Jedug - DJ TIKTOK TERBARU 2023 (14000ms)</option>
+                        <option value="/assets/music/jedag-jedug2.mp3" data-duration="14000">DJ TIKTOK TERBARU 2023 JEDAG JEDUG FULL BASS - DJ JUNGLE DUTCH BASS BETON (14000ms)</option>
+                        <!-- Lagu tambahan bisa ditambahkan di sini dengan format: data-duration="durasi_dalam_ms" -->
+                    </select>
+                    <small class="form-text">Pilih lagu yang akan diputar saat efek jedag jedug aktif. Durasi lagu ditampilkan dalam tanda kurung.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Pengaturan Efek Disco -->
+        <div class="subsection">
+            <h3><i class="fas fa-palette"></i> Pengaturan Efek Disco</h3>
+            <p class="form-text">Konfigurasi efek disco full screen dengan transparansi warna</p>
+            
+            <div class="form-grid">
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="giftJedagJedug.disco.enabled" id="giftJedagJedugDiscoEnabled">
+                        <span>Aktifkan Efek Disco Full Screen</span>
+                    </label>
+                    <small class="form-text">Aktifkan overlay disco full screen dengan warna yang berganti-ganti</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugDiscoBaseOpacity">Base Opacity (0.0 - 1.0)</label>
+                    <input type="number" name="giftJedagJedug.disco.baseOpacity" id="giftJedagJedugDiscoBaseOpacity" min="0" max="1" step="0.05" value="0.25" class="form-control">
+                    <small class="form-text">Opacity dasar untuk overlay disco (0.0 = transparan, 1.0 = tidak transparan). Default: 0.25</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugDiscoStrobeOpacity">Strobe Opacity (0.0 - 1.0)</label>
+                    <input type="number" name="giftJedagJedug.disco.strobeOpacity" id="giftJedagJedugDiscoStrobeOpacity" min="0" max="1" step="0.05" value="0.4" class="form-control">
+                    <small class="form-text">Opacity saat efek strobe/flash aktif. Default: 0.4</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugDiscoPulseMin">Pulse Opacity Min (0.0 - 1.0)</label>
+                    <input type="number" name="giftJedagJedug.disco.pulseMin" id="giftJedagJedugDiscoPulseMin" min="0" max="1" step="0.05" value="0.15" class="form-control">
+                    <small class="form-text">Opacity minimum untuk efek pulse. Default: 0.15</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugDiscoPulseMax">Pulse Opacity Max (0.0 - 1.0)</label>
+                    <input type="number" name="giftJedagJedug.disco.pulseMax" id="giftJedagJedugDiscoPulseMax" min="0" max="1" step="0.05" value="0.25" class="form-control">
+                    <small class="form-text">Opacity maksimum untuk efek pulse. Default: 0.25</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugDiscoColorSpeed">Kecepatan Perubahan Warna (ms)</label>
+                    <input type="number" name="giftJedagJedug.disco.colorSpeed" id="giftJedagJedugDiscoColorSpeed" min="50" max="500" step="10" value="100" class="form-control">
+                    <small class="form-text">Kecepatan perubahan warna disco dalam milidetik. Semakin kecil semakin cepat. Default: 100ms</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="giftJedagJedugDiscoStrobeSpeed">Kecepatan Strobe (ms)</label>
+                    <input type="number" name="giftJedagJedug.disco.strobeSpeed" id="giftJedagJedugDiscoStrobeSpeed" min="30" max="200" step="10" value="80" class="form-control">
+                    <small class="form-text">Kecepatan efek strobe/flash dalam milidetik. Semakin kecil semakin cepat. Default: 80ms</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-play-circle"></i> Simulasi</h3>
+            <p class="form-text">Uji coba efek jedag jedug secara langsung di overlay</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="simulateJedagJedugImageUrl">URL Gambar (Opsional)</label>
+                    <input type="text" id="simulateJedagJedugImageUrl" class="form-control" placeholder="/assets/images/tiktok-default-photo.jpg" value="/assets/images/tiktok-default-photo.jpg">
+                    <small class="form-text">Masukkan URL gambar profil. Default menggunakan gambar TikTok. Jika kosong, akan menggunakan emoji default.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="simulateJedagJedugCenterX">Posisi X (Center)</label>
+                    <input type="number" id="simulateJedagJedugCenterX" class="form-control" min="0" max="1920" placeholder="Kosongkan untuk tengah layar">
+                    <small class="form-text">Posisi horizontal untuk pusat efek (0-1920). Kosongkan untuk tengah layar.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="simulateJedagJedugCenterY">Posisi Y (Center)</label>
+                    <input type="number" id="simulateJedagJedugCenterY" class="form-control" min="0" max="1080" placeholder="Kosongkan untuk tengah layar">
+                    <small class="form-text">Posisi vertikal untuk pusat efek (0-1080). Kosongkan untuk tengah layar.</small>
+                </div>
+                
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary" id="simulateJedagJedugBtn">
+                        <i class="fas fa-rocket"></i> Summon Jedag Jedug
+                    </button>
+                    <small class="form-text">Klik untuk mengirim simulasi jedag jedug ke overlay. Pastikan overlay sudah terbuka.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

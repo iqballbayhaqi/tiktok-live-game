@@ -1,0 +1,52 @@
+<section id="alerts" class="config-section">
+    <h2><i class="fas fa-bell"></i> Alerts</h2>
+    
+    <div class="subsection">
+        <h3>Follower Alert</h3>
+        <div class="form-grid">
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" name="alerts.follower.enabled" id="followerAlertEnabled">
+                    <span>Enabled</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label>Duration (ms)</label>
+                <input type="number" name="alerts.follower.duration" id="followerDuration" min="1000" step="100">
+            </div>
+            <div class="form-group">
+                <label>Position Top (px)</label>
+                <input type="text" name="alerts.follower.position.top" id="followerTop">
+            </div>
+            <div class="form-group">
+                <label>Position Right (px)</label>
+                <input type="text" name="alerts.follower.position.right" id="followerRight">
+            </div>
+        </div>
+    </div>
+
+    <div class="subsection">
+        <h3>Gift Alert</h3>
+        <div class="form-grid">
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" name="alerts.gift.enabled" id="giftAlertEnabled">
+                    <span>Enabled</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label>Duration (ms)</label>
+                <input type="number" name="alerts.gift.duration" id="giftDuration" min="1000" step="100">
+            </div>
+            <div class="form-group">
+                <label>Position Top (px)</label>
+                <input type="text" name="alerts.gift.position.top" id="giftTop">
+            </div>
+            <div class="form-group">
+                <label>Position Right (px)</label>
+                <input type="text" name="alerts.gift.position.right" id="giftRight">
+            </div>
+        </div>
+    </div>
+</section>
+

@@ -1,0 +1,23 @@
+{
+  "watch": [
+    "src/backend",
+    "src/frontend",
+    "config",
+    ".env"
+  ],
+  "ext": "js,json,html,css",
+  "ignore": [
+    "node_modules",
+    "tests",
+    "docs",
+    "*.test.js",
+    "*.spec.js"
+  ],
+  "exec": "node src/backend/webhook-server.js",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000,
+  "verbose": true
+}
+

@@ -1,0 +1,36 @@
+{
+  "name": "tiktok-live-overlay",
+  "version": "1.0.0",
+  "description": "Overlay untuk TikTok Live Studio dengan webhook support",
+  "main": "src/backend/webhook-server.js",
+  "scripts": {
+    "start": "concurrently \"node src/backend/webhook-server.js\" \"wait-on http://localhost:3000 && opener http://localhost:3000\"",
+    "start:server": "node src/backend/webhook-server.js",
+    "dev": "nodemon",
+    "dev:open": "concurrently \"nodemon\" \"wait-on http://localhost:3000 && opener http://localhost:3000\"",
+    "test": "node tests/test-webhook.js",
+    "test:with-server": "node tests/test-with-server.js"
+  },
+  "keywords": [
+    "tiktok",
+    "live",
+    "overlay",
+    "webhook",
+    "streaming"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "tiktok-live-connector": "^2.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0",
+    "opener": "^1.5.2"
+  }
+}

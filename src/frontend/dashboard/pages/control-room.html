@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Room - TikTok Live Overlay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="/dashboard/css/control-room.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Component -->
+        <div id="header-container"></div>
+
+        <!-- Notification Component -->
+        <div id="notification-container"></div>
+
+        <div class="content-wrapper">
+            <!-- Sidebar Component -->
+            <div id="sidebar-container"></div>
+
+            <main class="main-content">
+                <form id="config-form" novalidate>
+                    <!-- User Selector Component -->
+                    <div id="user-selector-container"></div>
+
+                    <!-- Features Section Component -->
+                    <div id="features-section-container"></div>
+
+                    <!-- Alerts Section Component -->
+                    <div id="alerts-section-container"></div>
+
+                    <!-- Chat Section Component -->
+                    <div id="chat-section-container"></div>
+
+                    <!-- Widgets Section Component -->
+                    <div id="widgets-section-container"></div>
+
+                    <!-- Theme Section Component -->
+                    <div id="theme-section-container"></div>
+
+                    <!-- Animations Section Component -->
+                    <div id="animations-section-container"></div>
+
+                    <!-- API Section Component -->
+                    <div id="api-section-container"></div>
+
+                    <!-- Floating Photos Section Component -->
+                    <div id="floating-photos-section-container"></div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="resetBtn">Reset</button>
+                        <button type="button" class="btn btn-secondary" id="loadBtn">Reload</button>
+                        <button type="submit" class="btn btn-primary" id="saveBtn"><i class="fas fa-save"></i> Simpan Konfigurasi</button>
+                    </div>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Add User Component -->
+    <div id="add-user-modal-container"></div>
+
+    <!-- Modal Delete User Component -->
+    <div id="delete-user-modal-container"></div>
+
+    <!-- Load Component Loader -->
+    <script src="/shared/js/ComponentLoader.js"></script>
+    <!-- Load Components -->
+    <script src="/dashboard/js/components/Navigation.js"></script>
+    <script src="/dashboard/js/components/UserSelector.js"></script>
+    <script src="/dashboard/js/components/Notification.js"></script>
+    <script src="/dashboard/js/components/Modal.js"></script>
+    <script src="/dashboard/js/components/ConfigForm.js"></script>
+    <script src="/dashboard/js/components/TikTokConnector.js"></script>
+    <script src="/dashboard/js/components/AddUserModal.js"></script>
+    <script src="/dashboard/js/components/DeleteUserModal.js"></script>
+    <!-- Main Control Room Script -->
+    <script src="/dashboard/js/control-room.js"></script>
+</body>
+</html>
+

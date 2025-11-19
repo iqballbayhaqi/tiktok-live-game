@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Config files dengan sensitive data
+config.local.js
+.env
+.env.local
+.env.*
+!.env.example
+
+# Webhook server
+*.log
+logs/
+
+# Build files
+dist/
+build/
+

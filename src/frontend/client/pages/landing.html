@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Live Overlay - Daftar Sekarang</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 24px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .description {
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 50px;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 30px 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .whatsapp-button {
+            display: inline-block;
+            background: #25D366;
+            color: #fff;
+            text-decoration: none;
+            padding: 20px 50px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4);
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .whatsapp-button:hover {
+            background: #20BA5A;
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(37, 211, 102, 0.5);
+        }
+
+        .whatsapp-button:active {
+            transform: translateY(0);
+        }
+
+        .whatsapp-icon {
+            display: inline-block;
+            margin-right: 10px;
+            font-size: 24px;
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            .subtitle {
+                font-size: 20px;
+            }
+
+            .description {
+                font-size: 16px;
+            }
+
+            .container {
+                padding: 40px 20px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🎬</div>
+        <h1>TikTok Live Overlay</h1>
+        <p class="subtitle">Tingkatkan Kualitas Live Streaming Anda</p>
+        
+        <p class="description">
+            Dapatkan overlay profesional untuk TikTok Live Anda dengan fitur lengkap: 
+            alert follower, gift notification, chat overlay, dan banyak lagi. 
+            Semua dapat dikustomisasi sesuai kebutuhan Anda!
+        </p>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">👋</div>
+                <div class="feature-title">Follower Alert</div>
+                <div class="feature-desc">Notifikasi untuk follower baru</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🎁</div>
+                <div class="feature-title">Gift Alert</div>
+                <div class="feature-desc">Notifikasi untuk gift yang diterima</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💬</div>
+                <div class="feature-title">Chat Overlay</div>
+                <div class="feature-desc">Tampilkan chat live di overlay</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚙️</div>
+                <div class="feature-title">Kustomisasi</div>
+                <div class="feature-desc">Sesuaikan dengan style Anda</div>
+            </div>
+        </div>
+
+        <a href="https://wa.me/6281234567890?text=Halo,%20saya%20ingin%20mendaftarkan%20live%20streaming%20saya" 
+           target="_blank" 
+           class="whatsapp-button"
+           id="whatsapp-link">
+            <span class="whatsapp-icon">💬</span>
+            Daftar via WhatsApp
+        </a>
+
+        <p class="footer">
+            Hubungi kami untuk mendapatkan akses ke overlay profesional Anda
+        </p>
+    </div>
+
+    <script>
+        // Dapatkan nomor WhatsApp dan pesan dari config atau gunakan default
+        // Bisa diubah melalui query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        let whatsappNumber = urlParams.get('wa');
+        let whatsappMessage = urlParams.get('msg');
+        
+        // Coba load dari config jika tidak ada di query parameter
+        if (!whatsappNumber || !whatsappMessage) {
+            fetch('/config/config.json')
+                .then(response => response.json())
+                .then(config => {
+                    if (!whatsappNumber) {
+                        whatsappNumber = config.whatsappNumber || config.whatsapp?.number || '6281234567890';
+                    }
+                    if (!whatsappMessage) {
+                        whatsappMessage = config.whatsapp?.message || 'Halo, saya ingin mendaftarkan live streaming saya';
+                    }
+                    updateWhatsAppLink();
+                })
+                .catch(() => {
+                    if (!whatsappNumber) {
+                        whatsappNumber = '6281234567890';
+                    }
+                    if (!whatsappMessage) {
+                        whatsappMessage = 'Halo, saya ingin mendaftarkan live streaming saya';
+                    }
+                    updateWhatsAppLink();
+                });
+        } else {
+            updateWhatsAppLink();
+        }
+        
+        function updateWhatsAppLink() {
+            const whatsappLink = document.getElementById('whatsapp-link');
+            whatsappLink.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+        }
+    </script>
+</body>
+</html>
+

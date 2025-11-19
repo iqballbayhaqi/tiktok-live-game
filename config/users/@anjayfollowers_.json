@@ -1,0 +1,87 @@
+{
+  "features": {
+    "followerAlert": true,
+    "giftAlert": true,
+    "chatOverlay": true,
+    "streamTimer": true,
+    "viewerCount": true,
+    "customBanner": true,
+    "floatingPhotos": true,
+    "animations": true,
+    "tiktokConnector": true,
+    "webhookConnection": true
+  },
+  "alerts": {
+    "follower": {
+      "enabled": false,
+      "position": {}
+    },
+    "gift": {
+      "enabled": false,
+      "position": {}
+    }
+  },
+  "chat": {
+    "enabled": false,
+    "maxMessages": 50,
+    "position": {}
+  },
+  "widgets": {
+    "streamStatus": {
+      "enabled": false
+    },
+    "streamTimer": {
+      "enabled": false,
+      "position": {}
+    },
+    "viewerCount": {
+      "enabled": false,
+      "showInChat": false
+    }
+  },
+  "theme": {
+    "primary": {
+      "solid": "#000000"
+    },
+    "secondary": {
+      "solid": "#000000"
+    },
+    "text": "#000000"
+  },
+  "animations": {
+    "enabled": false
+  },
+  "api": {
+    "enabled": false
+  },
+  "floatingPhotos": {
+    "randomColor": false
+  },
+  "giftFloatingPhotos": {
+    "enabled": false
+  },
+  "giftFirework": {
+    "enabled": false,
+    "selectionMode": "manual",
+    "coinMin": 1,
+    "coinMax": 1,
+    "count": 20,
+    "centerX": 960,
+    "centerY": 540
+  },
+  "giftJedagJedug": {
+    "enabled": false,
+    "selectionMode": "manual",
+    "gifts": [],
+    "coinMin": null,
+    "coinMax": null,
+    "duration": 14000,
+    "centerX": null,
+    "centerY": null,
+    "musicPath": "/assets/music/jedag-jedug.mp3",
+    "disco": {
+      "enabled": true,
+      "baseOpacity": 0.5
+    }
+  }
+}

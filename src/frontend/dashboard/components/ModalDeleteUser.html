@@ -1,0 +1,29 @@
+<div id="delete-user-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-exclamation-triangle"></i> Konfirmasi Hapus User</h2>
+            <button class="modal-close" id="close-delete-modal-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 15px;">Apakah Anda yakin ingin menghapus user <strong id="delete-username-text"></strong>?</p>
+            <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 15px;">
+                <p style="margin: 0; color: #856404; font-size: 13px;">
+                    <i class="fas fa-info-circle"></i> <strong>Peringatan:</strong> Tindakan ini akan menghapus:
+                </p>
+                <ul style="margin: 8px 0 0 20px; color: #856404; font-size: 13px;">
+                    <li>Data user dari sistem</li>
+                    <li>Konfigurasi user</li>
+                    <li>Koneksi TikTok (jika ada)</li>
+                </ul>
+                <p style="margin: 8px 0 0; color: #856404; font-size: 13px;"><strong>Tindakan ini tidak dapat dibatalkan!</strong></p>
+            </div>
+            <div class="form-actions" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e1e8ed;">
+                <button type="button" class="btn btn-secondary" id="cancel-delete-user-btn">Batal</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-user-btn">
+                    <i class="fas fa-trash"></i> Ya, Hapus User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

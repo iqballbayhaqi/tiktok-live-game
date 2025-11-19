@@ -1,0 +1,31 @@
+<div id="add-user-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-user-plus"></i> Tambah User Baru</h2>
+            <button class="modal-close" id="close-modal-btn">&times;</button>
+        </div>
+        <form id="add-user-form">
+            <div class="form-group">
+                <label for="new-username">Username <span style="color: #e0245e;">*</span></label>
+                <input type="text" id="new-username" name="username" required 
+                       placeholder="contoh: @username" 
+                       pattern="^@?[a-zA-Z0-9_]+$"
+                       title="Username harus alphanumeric, boleh diawali dengan @">
+                <small class="form-hint">Username harus unik. Boleh menggunakan @ di awal.</small>
+            </div>
+            <div class="form-group">
+                <label for="new-display-name">Display Name</label>
+                <input type="text" id="new-display-name" name="displayName" 
+                       placeholder="Nama tampilan (opsional)">
+                <small class="form-hint">Nama yang akan ditampilkan. Jika kosong, akan menggunakan username.</small>
+            </div>
+            <div class="form-actions" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e1e8ed;">
+                <button type="button" class="btn btn-secondary" id="cancel-add-user-btn">Batal</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Simpan User
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
