@@ -402,12 +402,6 @@ class ConfigForm {
         this.setNestedValue('theme.background', config.theme?.background);
         this.setNestedValue('theme.text', config.theme?.text);
 
-        // API
-        this.setNestedValue('api.enabled', config.api?.enabled);
-        this.setNestedValue('api.endpoint', config.api?.endpoint);
-        this.setNestedValue('api.apiKey', config.api?.apiKey);
-        this.setNestedValue('api.pollInterval', config.api?.pollInterval);
-
         // Floating Photos
         this.setNestedValue('floatingPhotos.randomColor', config.floatingPhotos?.randomColor);
         this.setNestedValue('floatingPhotos.maxPhotos', config.floatingPhotos?.maxPhotos || 100);
@@ -697,12 +691,6 @@ class ConfigForm {
                 },
                 background: this.getNestedValue('theme.background'),
                 text: this.getNestedValue('theme.text')
-            },
-            api: {
-                enabled: this.getNestedValue('api.enabled'),
-                endpoint: this.getNestedValue('api.endpoint'),
-                apiKey: this.getNestedValue('api.apiKey'),
-                pollInterval: this.getNestedValue('api.pollInterval')
             },
             floatingPhotos: {
                 randomColor: this.getNestedValue('floatingPhotos.randomColor'),

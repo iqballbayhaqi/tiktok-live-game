@@ -86,7 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             { name: 'ChatSection', target: '#chat-section-container' },
             { name: 'WidgetsSection', target: '#widgets-section-container' },
             { name: 'ThemeSection', target: '#theme-section-container' },
-            { name: 'ApiSection', target: '#api-section-container' },
             { name: 'FloatingPhotosSection', target: '#floating-photos-section-container' },
             { name: 'ContactDeveloperSection', target: '#contact-developer-section-container' },
             { name: 'ModalAddUser', target: '#add-user-modal-container' },
