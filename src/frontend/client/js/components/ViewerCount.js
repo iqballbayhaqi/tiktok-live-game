@@ -2,13 +2,27 @@
 class ViewerCount {
     constructor() {
         this.count = 0;
-        this.viewerCountEl = document.getElementById('viewer-count');
     }
 
     update(count) {
         this.count = count;
-        if (this.viewerCountEl) {
-            this.viewerCountEl.textContent = count.toLocaleString('id-ID');
+        const formattedCount = count.toLocaleString('id-ID');
+        
+        // Cari semua elemen dengan id viewer-count (bisa ada di chat overlay atau widget container)
+        const elements = document.querySelectorAll('#viewer-count');
+        
+        if (elements.length > 0) {
+            elements.forEach(el => {
+                el.textContent = formattedCount;
+            });
+        } else {
+            // Jika elemen belum tersedia, coba lagi setelah delay singkat
+            setTimeout(() => {
+                const retryElements = document.querySelectorAll('#viewer-count');
+                retryElements.forEach(el => {
+                    el.textContent = formattedCount;
+                });
+            }, 100);
         }
     }
 

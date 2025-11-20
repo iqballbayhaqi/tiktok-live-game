@@ -1,6 +1,6 @@
 {
   "features": {
-    "followerAlert": true,
+    "followerAlert": false,
     "giftAlert": true,
     "chatOverlay": true,
     "streamTimer": true,
@@ -13,16 +13,16 @@
   },
   "alerts": {
     "follower": {
-      "enabled": false,
+      "enabled": true,
       "position": {}
     },
     "gift": {
-      "enabled": false,
+      "enabled": true,
       "position": {}
     }
   },
   "chat": {
-    "enabled": false,
+    "enabled": true,
     "maxMessages": 50,
     "position": {}
   },
@@ -48,17 +48,29 @@
     },
     "text": "#000000"
   },
-  "animations": {
-    "enabled": false
-  },
   "api": {
     "enabled": false
   },
   "floatingPhotos": {
-    "randomColor": false
+    "randomColor": false,
+    "maxPhotos": 100,
+    "scale": 1,
+    "triggers": {
+      "chat": true,
+      "chatScale": 1,
+      "follow": false,
+      "followScale": 1,
+      "share": false,
+      "shareScale": 1,
+      "gift": false,
+      "giftScale": 1
+    }
   },
   "giftFloatingPhotos": {
-    "enabled": false
+    "enabled": false,
+    "selectionMode": "manual",
+    "coinMin": null,
+    "coinMax": null
   },
   "giftFirework": {
     "enabled": false,

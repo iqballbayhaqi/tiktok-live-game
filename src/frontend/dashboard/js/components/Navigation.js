@@ -9,6 +9,16 @@ class Navigation {
         this.navLinks = document.querySelectorAll('.nav-link');
         this.sections = document.querySelectorAll('.config-section');
         this.setupEventListeners();
+        
+        // Check initial active section and hide form-actions if needed
+        const activeSection = document.querySelector('.config-section.active');
+        if (activeSection) {
+            const sectionId = activeSection.id;
+            const formActions = document.querySelector('.form-actions');
+            if (formActions && (sectionId === 'contact-developer' || sectionId === 'dashboard-setting')) {
+                formActions.style.display = 'none';
+            }
+        }
     }
 
     setupEventListeners() {
@@ -34,6 +44,16 @@ class Navigation {
         const targetSection = document.getElementById(sectionId);
         if (targetSection) {
             targetSection.classList.add('active');
+        }
+
+        // Hide form-actions when contact-developer or dashboard-setting section is active
+        const formActions = document.querySelector('.form-actions');
+        if (formActions) {
+            if (sectionId === 'contact-developer' || sectionId === 'dashboard-setting') {
+                formActions.style.display = 'none';
+            } else {
+                formActions.style.display = 'flex';
+            }
         }
     }
 }

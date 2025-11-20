@@ -4,7 +4,9 @@ class ConfigForm {
         this.currentConfig = null;
         this.form = document.getElementById('config-form');
         this.giftsData = null;
+        this.musicData = null;
         this.loadGiftsData();
+        this.loadMusicData();
         // Setup mode selection handlers setelah DOM siap
         setTimeout(() => {
             this.setupModeSelectionHandlers();
@@ -32,6 +34,90 @@ class ConfigForm {
         } catch (error) {
             console.error('Error loading gifts data:', error);
         }
+    }
+
+    async loadMusicData() {
+        try {
+            const response = await fetch('/api/music');
+            if (response.ok) {
+                const data = await response.json();
+                this.musicData = data.music || [];
+                // Tunggu sebentar untuk memastikan DOM sudah siap
+                setTimeout(async () => {
+                    await this.populateMusicSelect();
+                    // Jika ada config yang sudah dimuat, set nilai select musik
+                    if (this.currentConfig && this.currentConfig.giftJedagJedug?.musicPath) {
+                        const musicSelect = document.getElementById('giftJedagJedugMusicPath');
+                        if (musicSelect) {
+                            // Check if the value exists in options, if not add it
+                            const optionExists = Array.from(musicSelect.options).some(opt => opt.value === this.currentConfig.giftJedagJedug.musicPath);
+                            if (!optionExists && this.currentConfig.giftJedagJedug.musicPath) {
+                                // Add custom option if it doesn't exist
+                                const option = document.createElement('option');
+                                option.value = this.currentConfig.giftJedagJedug.musicPath;
+                                option.textContent = this.currentConfig.giftJedagJedug.musicPath;
+                                musicSelect.appendChild(option);
+                            }
+                            musicSelect.value = this.currentConfig.giftJedagJedug.musicPath;
+                        }
+                    }
+                }, 100);
+            } else {
+                console.warn('Gagal memuat data musik, menggunakan fallback');
+            }
+        } catch (error) {
+            console.error('Error loading music data:', error);
+        }
+    }
+
+    async populateMusicSelect() {
+        const musicSelect = document.getElementById('giftJedagJedugMusicPath');
+        if (!musicSelect || !this.musicData || this.musicData.length === 0) {
+            return;
+        }
+
+        // Clear existing options (keep first empty option if exists)
+        const firstOption = musicSelect.options[0];
+        musicSelect.innerHTML = '';
+        if (firstOption && firstOption.value === '') {
+            musicSelect.appendChild(firstOption);
+        }
+
+        // Add music options
+        for (const music of this.musicData) {
+            const option = document.createElement('option');
+            option.value = music.path;
+            
+            // Try to detect duration from audio file
+            const duration = await this.getAudioDuration(music.path);
+            if (duration) {
+                option.setAttribute('data-duration', duration);
+                option.textContent = `${music.filename} (${duration}ms)`;
+            } else {
+                option.textContent = music.filename;
+            }
+            
+            musicSelect.appendChild(option);
+        }
+    }
+
+    async getAudioDuration(audioPath) {
+        return new Promise((resolve) => {
+            try {
+                const audio = new Audio(audioPath);
+                audio.addEventListener('loadedmetadata', () => {
+                    const duration = Math.round(audio.duration * 1000); // Convert to milliseconds
+                    resolve(duration);
+                });
+                audio.addEventListener('error', () => {
+                    resolve(null);
+                });
+                // Set a timeout to avoid hanging
+                setTimeout(() => resolve(null), 5000);
+            } catch (error) {
+                resolve(null);
+            }
+        });
     }
 
     populateGiftSelects() {
@@ -316,11 +402,6 @@ class ConfigForm {
         this.setNestedValue('theme.background', config.theme?.background);
         this.setNestedValue('theme.text', config.theme?.text);
 
-        // Animations
-        this.setNestedValue('animations.enabled', config.animations?.enabled);
-        this.setNestedValue('animations.duration', config.animations?.duration);
-        this.setNestedValue('animations.easing', config.animations?.easing);
-
         // API
         this.setNestedValue('api.enabled', config.api?.enabled);
         this.setNestedValue('api.endpoint', config.api?.endpoint);
@@ -330,6 +411,17 @@ class ConfigForm {
         // Floating Photos
         this.setNestedValue('floatingPhotos.randomColor', config.floatingPhotos?.randomColor);
         this.setNestedValue('floatingPhotos.maxPhotos', config.floatingPhotos?.maxPhotos || 100);
+        this.setNestedValue('floatingPhotos.scale', config.floatingPhotos?.scale || 1.0);
+        
+        // Floating Photos Triggers
+        this.setNestedValue('floatingPhotos.triggers.chat', config.floatingPhotos?.triggers?.chat || false);
+        this.setNestedValue('floatingPhotos.triggers.chatScale', config.floatingPhotos?.triggers?.chatScale || 1.0);
+        this.setNestedValue('floatingPhotos.triggers.follow', config.floatingPhotos?.triggers?.follow || false);
+        this.setNestedValue('floatingPhotos.triggers.followScale', config.floatingPhotos?.triggers?.followScale || 1.0);
+        this.setNestedValue('floatingPhotos.triggers.share', config.floatingPhotos?.triggers?.share || false);
+        this.setNestedValue('floatingPhotos.triggers.shareScale', config.floatingPhotos?.triggers?.shareScale || 1.0);
+        this.setNestedValue('floatingPhotos.triggers.gift', config.floatingPhotos?.triggers?.gift || false);
+        this.setNestedValue('floatingPhotos.triggers.giftScale', config.floatingPhotos?.triggers?.giftScale || 1.0);
         
         // Color Palette
         if (config.floatingPhotos?.colorPalette && Array.isArray(config.floatingPhotos.colorPalette)) {
@@ -340,7 +432,12 @@ class ConfigForm {
 
         // Gift Floating Photos
         this.setNestedValue('giftFloatingPhotos.enabled', config.giftFloatingPhotos?.enabled);
+        const giftFloatingPhotosMode = config.giftFloatingPhotos?.selectionMode || 'manual';
+        this.setNestedValue('giftFloatingPhotos.selectionMode', giftFloatingPhotosMode);
+        this.toggleGiftSelectionMode('giftFloatingPhotos', giftFloatingPhotosMode);
         this.setGiftSelectValues('giftFloatingPhotosGifts', config.giftFloatingPhotos?.gifts);
+        this.setNestedValue('giftFloatingPhotos.coinMin', config.giftFloatingPhotos?.coinMin);
+        this.setNestedValue('giftFloatingPhotos.coinMax', config.giftFloatingPhotos?.coinMax);
 
         // Gift Firework
         this.setNestedValue('giftFirework.enabled', config.giftFirework?.enabled);
@@ -369,7 +466,20 @@ class ConfigForm {
         this.setNestedValue('giftJedagJedug.volume', config.giftJedagJedug?.volume);
         this.setNestedValue('giftJedagJedug.centerX', config.giftJedagJedug?.centerX);
         this.setNestedValue('giftJedagJedug.centerY', config.giftJedagJedug?.centerY);
-        this.setNestedValue('giftJedagJedug.musicPath', config.giftJedagJedug?.musicPath);
+        
+        // Set music path - ensure music select is populated first
+        if (this.musicData && this.musicData.length > 0) {
+            // Populate music select first, then set value
+            this.populateMusicSelect().then(() => {
+                this.setNestedValue('giftJedagJedug.musicPath', config.giftJedagJedug?.musicPath);
+            }).catch(() => {
+                // Fallback: try to set value anyway
+                this.setNestedValue('giftJedagJedug.musicPath', config.giftJedagJedug?.musicPath);
+            });
+        } else {
+            // If music data not loaded yet, try to set value anyway (might be custom path)
+            this.setNestedValue('giftJedagJedug.musicPath', config.giftJedagJedug?.musicPath);
+        }
         
         // Disco configuration
         this.setNestedValue('giftJedagJedug.disco.enabled', config.giftJedagJedug?.disco?.enabled);
@@ -474,6 +584,19 @@ class ConfigForm {
     }
 
     validateForm() {
+        // Validasi range coin untuk Floating Photos
+        const floatingPhotosMode = this.getNestedValue('giftFloatingPhotos.selectionMode') || 'manual';
+        if (floatingPhotosMode === 'coinRange') {
+            const coinMin = this.getNestedValueOrNull('giftFloatingPhotos.coinMin');
+            const coinMax = this.getNestedValueOrNull('giftFloatingPhotos.coinMax');
+            if (coinMin !== null && coinMax !== null && coinMin > coinMax) {
+                return {
+                    valid: false,
+                    message: 'Min coin Floating Photos tidak boleh lebih besar dari Max coin'
+                };
+            }
+        }
+
         // Validasi range coin untuk Firework
         const fireworkMode = this.getNestedValue('giftFirework.selectionMode') || 'manual';
         if (fireworkMode === 'coinRange') {
@@ -575,11 +698,6 @@ class ConfigForm {
                 background: this.getNestedValue('theme.background'),
                 text: this.getNestedValue('theme.text')
             },
-            animations: {
-                enabled: this.getNestedValue('animations.enabled'),
-                duration: this.getNestedValue('animations.duration'),
-                easing: this.getNestedValue('animations.easing')
-            },
             api: {
                 enabled: this.getNestedValue('api.enabled'),
                 endpoint: this.getNestedValue('api.endpoint'),
@@ -589,11 +707,25 @@ class ConfigForm {
             floatingPhotos: {
                 randomColor: this.getNestedValue('floatingPhotos.randomColor'),
                 colorPalette: this.getColorPaletteFromForm(),
-                maxPhotos: this.getNestedValue('floatingPhotos.maxPhotos')
+                maxPhotos: this.getNestedValue('floatingPhotos.maxPhotos'),
+                scale: this.getNestedValue('floatingPhotos.scale') || 1.0,
+                triggers: {
+                    chat: this.getNestedValue('floatingPhotos.triggers.chat') || false,
+                    chatScale: this.getNestedValue('floatingPhotos.triggers.chatScale') || 1.0,
+                    follow: this.getNestedValue('floatingPhotos.triggers.follow') || false,
+                    followScale: this.getNestedValue('floatingPhotos.triggers.followScale') || 1.0,
+                    share: this.getNestedValue('floatingPhotos.triggers.share') || false,
+                    shareScale: this.getNestedValue('floatingPhotos.triggers.shareScale') || 1.0,
+                    gift: this.getNestedValue('floatingPhotos.triggers.gift') || false,
+                    giftScale: this.getNestedValue('floatingPhotos.triggers.giftScale') || 1.0
+                }
             },
             giftFloatingPhotos: {
                 enabled: this.getNestedValue('giftFloatingPhotos.enabled'),
-                gifts: this.getGiftFloatingPhotosGifts()
+                selectionMode: this.getNestedValue('giftFloatingPhotos.selectionMode') || 'manual',
+                gifts: this.getGiftFloatingPhotosGifts(),
+                coinMin: this.getNestedValueOrNull('giftFloatingPhotos.coinMin'),
+                coinMax: this.getNestedValueOrNull('giftFloatingPhotos.coinMax')
             },
             giftFirework: {
                 enabled: this.getNestedValue('giftFirework.enabled'),
@@ -781,6 +913,14 @@ class ConfigForm {
     }
 
     setupModeSelectionHandlers() {
+        // Setup handler untuk Floating Photos mode selection
+        const floatingPhotosModeRadios = document.querySelectorAll('input[name="giftFloatingPhotos.selectionMode"]');
+        floatingPhotosModeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                this.toggleGiftSelectionMode('giftFloatingPhotos', radio.value);
+            });
+        });
+
         // Setup handler untuk Firework mode selection
         const fireworkModeRadios = document.querySelectorAll('input[name="giftFirework.selectionMode"]');
         fireworkModeRadios.forEach(radio => {
@@ -796,6 +936,18 @@ class ConfigForm {
                 this.toggleGiftSelectionMode('giftJedagJedug', radio.value);
             });
         });
+
+        // Setup validasi range coin untuk Floating Photos
+        const floatingPhotosCoinMin = document.getElementById('giftFloatingPhotosCoinMin');
+        const floatingPhotosCoinMax = document.getElementById('giftFloatingPhotosCoinMax');
+        if (floatingPhotosCoinMin && floatingPhotosCoinMax) {
+            floatingPhotosCoinMin.addEventListener('input', () => {
+                this.validateCoinRange('giftFloatingPhotos');
+            });
+            floatingPhotosCoinMax.addEventListener('input', () => {
+                this.validateCoinRange('giftFloatingPhotos');
+            });
+        }
 
         // Setup validasi range coin untuk Firework
         const fireworkCoinMin = document.getElementById('giftFireworkCoinMin');

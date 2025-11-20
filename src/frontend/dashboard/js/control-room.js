@@ -8,6 +8,69 @@ let tiktokConnector = null;
 let addUserModal = null;
 let deleteUserModal = null;
 
+// Theme Management
+class ThemeManager {
+    constructor() {
+        this.currentTheme = localStorage.getItem('dashboard-theme') || 'dark';
+        this.init();
+    }
+
+    init() {
+        // Apply saved theme immediately (before DOM is ready)
+        this.applyTheme(this.currentTheme);
+    }
+
+    applyTheme(theme) {
+        const body = document.body;
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+        
+        if (theme === 'light') {
+            body.classList.add('light-theme');
+            body.classList.remove('dark-theme');
+            if (themeIcon) {
+                themeIcon.className = 'fas fa-sun';
+            }
+            if (themeText) {
+                themeText.textContent = 'Light';
+            }
+        } else {
+            body.classList.remove('light-theme');
+            body.classList.add('dark-theme');
+            if (themeIcon) {
+                themeIcon.className = 'fas fa-moon';
+            }
+            if (themeText) {
+                themeText.textContent = 'Dark';
+            }
+        }
+        
+        this.currentTheme = theme;
+        localStorage.setItem('dashboard-theme', theme);
+    }
+
+    toggleTheme() {
+        const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+        this.applyTheme(newTheme);
+    }
+
+    setupThemeToggle() {
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            // Remove existing listeners by cloning
+            const newToggle = themeToggle.cloneNode(true);
+            themeToggle.parentNode.replaceChild(newToggle, themeToggle);
+            
+            newToggle.addEventListener('click', () => {
+                this.toggleTheme();
+            });
+        }
+    }
+}
+
+// Initialize theme manager immediately (before DOM ready)
+let themeManager = new ThemeManager();
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -16,18 +79,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             { name: 'Header', target: '#header-container' },
             { name: 'Notification', target: '#notification-container' },
             { name: 'Sidebar', target: '#sidebar-container' },
+            { name: 'DashboardSettingSection', target: '#dashboard-setting-section-container' },
             { name: 'UserSelector', target: '#user-selector-container' },
             { name: 'FeaturesSection', target: '#features-section-container' },
             { name: 'AlertsSection', target: '#alerts-section-container' },
             { name: 'ChatSection', target: '#chat-section-container' },
             { name: 'WidgetsSection', target: '#widgets-section-container' },
             { name: 'ThemeSection', target: '#theme-section-container' },
-            { name: 'AnimationsSection', target: '#animations-section-container' },
             { name: 'ApiSection', target: '#api-section-container' },
             { name: 'FloatingPhotosSection', target: '#floating-photos-section-container' },
+            { name: 'ContactDeveloperSection', target: '#contact-developer-section-container' },
             { name: 'ModalAddUser', target: '#add-user-modal-container' },
             { name: 'ModalDeleteUser', target: '#delete-user-modal-container' }
         ]);
+        
+        // Re-setup theme toggle after components loaded (with delay to ensure DOM is ready)
+        if (themeManager) {
+            setTimeout(() => {
+                themeManager.setupThemeToggle();
+            }, 200);
+        }
 
         // Initialize components
         navigation = new Navigation();
@@ -78,6 +149,49 @@ async function handleUserChange(username) {
     await loadConfig();
     userSelector.updateUserInfo();
     await tiktokConnector.loadState();
+}
+
+// Update overlay links in Gift Effect sections
+function updateGiftEffectOverlayLinks(liveCode) {
+    if (!liveCode) return;
+    
+    const baseUrl = window.location.origin;
+    
+    // Update Floating Photos overlay link
+    const overlayLinkFloatingPhotos = document.getElementById('overlay-link-floating-photos');
+    if (overlayLinkFloatingPhotos) {
+        overlayLinkFloatingPhotos.href = `${baseUrl}/live/floating-photos/${liveCode}`;
+    }
+    
+    // Update Firework overlay link
+    const overlayLinkFirework = document.getElementById('overlay-link-firework');
+    if (overlayLinkFirework) {
+        overlayLinkFirework.href = `${baseUrl}/live/firework/${liveCode}`;
+    }
+    
+    // Update Jedag Jedug overlay link
+    const overlayLinkJedagJedug = document.getElementById('overlay-link-jedagjedug');
+    if (overlayLinkJedagJedug) {
+        overlayLinkJedagJedug.href = `${baseUrl}/live/jedagjedug/${liveCode}`;
+    }
+    
+    // Update Chat overlay link
+    const overlayLinkChat = document.getElementById('overlay-link-chat');
+    if (overlayLinkChat) {
+        overlayLinkChat.href = `${baseUrl}/live/chat/${liveCode}`;
+    }
+    
+    // Update Follower Alert overlay link
+    const overlayLinkFollowerAlert = document.getElementById('overlay-link-follower-alert');
+    if (overlayLinkFollowerAlert) {
+        overlayLinkFollowerAlert.href = `${baseUrl}/live/follower-alert/${liveCode}`;
+    }
+    
+    // Update Gift Alert overlay link
+    const overlayLinkGiftAlert = document.getElementById('overlay-link-gift-alert');
+    if (overlayLinkGiftAlert) {
+        overlayLinkGiftAlert.href = `${baseUrl}/live/gift-alert/${liveCode}`;
+    }
 }
 
 // Handle user added
@@ -276,7 +390,7 @@ async function simulateFloatingPhoto() {
             simulateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
         }
 
-        // Siapkan payload
+        // Siapkan payload - selalu kirim minimal emoji jika tidak ada yang diisi
         const payload = {};
         if (imageUrl) {
             payload.imageUrl = imageUrl;
@@ -284,6 +398,12 @@ async function simulateFloatingPhoto() {
         if (emoji) {
             payload.emoji = emoji;
         }
+        // Jika keduanya kosong, kirim emoji default
+        if (!imageUrl && !emoji) {
+            payload.emoji = '🎉';
+        }
+
+        console.log('📤 Sending floating-photo simulation:', payload);
 
         // Kirim webhook ke server
         const response = await fetch(`/webhook/${encodeURIComponent(username)}/floating-photo`, {
@@ -355,6 +475,8 @@ async function simulateFirework() {
         }
         payload.count = count;
 
+        console.log('📤 Sending firework simulation:', payload);
+
         // Kirim webhook ke server
         const response = await fetch(`/webhook/${encodeURIComponent(username)}/firework`, {
             method: 'POST',
@@ -416,6 +538,8 @@ async function simulateJedagJedug() {
         if (centerY !== null) {
             payload.centerY = centerY;
         }
+
+        console.log('📤 Sending jedag-jedug simulation:', payload);
 
         // Kirim webhook ke server
         const response = await fetch(`/webhook/${encodeURIComponent(username)}/jedag-jedug`, {

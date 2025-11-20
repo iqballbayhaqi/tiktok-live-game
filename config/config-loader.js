@@ -134,8 +134,17 @@ function reloadConfigFromServer() {
 function getLiveCodeFromUrl() {
     if (typeof window === 'undefined') return null;
     
-    // Cek jika URL path adalah /live/:code
-    const pathMatch = window.location.pathname.match(/^\/live\/([^\/]+)/);
+    const pathname = window.location.pathname;
+    
+    // Cek pattern untuk overlay khusus: /live/floating-photos/:id, /live/firework/:id, /live/jedagjedug/:id, /live/chat/:id, /live/follower-alert/:id, /live/gift-alert/:id
+    const specialOverlayMatch = pathname.match(/^\/live\/(floating-photos|firework|jedagjedug|chat|follower-alert|gift-alert)\/([^\/\?]+)/);
+    if (specialOverlayMatch && specialOverlayMatch[2]) {
+        // Return live code (ID) dari pattern khusus
+        return specialOverlayMatch[2];
+    }
+    
+    // Cek jika URL path adalah /live/:code (main overlay)
+    const pathMatch = pathname.match(/^\/live\/([^\/\?]+)/);
     if (pathMatch && pathMatch[1]) {
         return pathMatch[1];
     }

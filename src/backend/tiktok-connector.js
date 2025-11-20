@@ -237,9 +237,20 @@ class TikTokConnector {
         // Share Event
         this.connection.on(WebcastEvent.SHARE, (data) => {
             const username = this.extractUsername(data);
+            const avatarUrl = this.extractAvatarUrl(data);
             
             console.log(`📤 Share: ${username} shared the stream!`);
             
+            // Broadcast share event untuk floating photo trigger
+            this.broadcastCallback({
+                type: 'share',
+                data: {
+                    username: username,
+                    avatarUrl: avatarUrl
+                }
+            });
+            
+            // Juga broadcast sebagai banner untuk backward compatibility
             this.broadcastCallback({
                 type: 'banner',
                 data: {

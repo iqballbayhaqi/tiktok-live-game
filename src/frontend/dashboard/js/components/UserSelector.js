@@ -371,10 +371,18 @@ class UserSelector {
         if (user && user.liveCode) {
             const userInfo = document.getElementById('user-info');
             const liveCodeSpan = document.getElementById('user-live-code');
-            const overlayLink = document.getElementById('overlay-link');
             
+            // Update live code
             if (liveCodeSpan) liveCodeSpan.textContent = user.liveCode;
-            if (overlayLink) overlayLink.href = `/live/${user.liveCode}`;
+            
+            // Update main overlay link
+            const baseUrl = window.location.origin;
+            const overlayLinkMain = document.getElementById('overlay-link-main');
+            if (overlayLinkMain) overlayLinkMain.href = `${baseUrl}/live/${user.liveCode}`;
+            
+            // Update overlay links in FloatingPhotosSection
+            updateGiftEffectOverlayLinks(user.liveCode);
+            
             if (userInfo) userInfo.style.display = 'block';
             
             // Setup open live TikTok button handler

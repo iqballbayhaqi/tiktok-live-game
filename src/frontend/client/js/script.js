@@ -47,6 +47,7 @@ class TikTokOverlay {
 
         this.loadConfig();
         this.loadGiftsData();
+        this.initViewerCountWidget();
         this.applyFeatureFlags();
         this.applyThemeAndPositions();
         this.startStreamTimer();
@@ -149,23 +150,37 @@ class TikTokOverlay {
             }
         }
         
-        // Apply chat position dan size
+        // Apply chat position dan size (dengan pertimbangan responsive)
         if (this.config.chat) {
             const chatOverlay = document.getElementById('chat-overlay');
             if (chatOverlay) {
-                if (this.config.chat.position) {
-                    if (this.config.chat.position.bottom) {
-                        chatOverlay.style.bottom = this.config.chat.position.bottom;
+                // Cek apakah kita di mobile viewport
+                const isMobile = window.innerWidth <= 768;
+                const isSmallMobile = window.innerWidth <= 480;
+                
+                // Di mobile, biarkan CSS media queries yang mengatur
+                if (!isMobile) {
+                    if (this.config.chat.position) {
+                        if (this.config.chat.position.bottom) {
+                            chatOverlay.style.bottom = this.config.chat.position.bottom;
+                        }
+                        if (this.config.chat.position.left) {
+                            chatOverlay.style.left = this.config.chat.position.left;
+                        }
                     }
-                    if (this.config.chat.position.left) {
-                        chatOverlay.style.left = this.config.chat.position.left;
+                    if (this.config.chat.width) {
+                        chatOverlay.style.width = this.config.chat.width;
                     }
-                }
-                if (this.config.chat.width) {
-                    chatOverlay.style.width = this.config.chat.width;
-                }
-                if (this.config.chat.maxHeight) {
-                    chatOverlay.style.maxHeight = this.config.chat.maxHeight;
+                    if (this.config.chat.maxHeight) {
+                        chatOverlay.style.maxHeight = this.config.chat.maxHeight;
+                    }
+                } else {
+                    // Di mobile, hapus inline styles yang mungkin mengganggu responsive
+                    chatOverlay.style.bottom = '';
+                    chatOverlay.style.left = '';
+                    chatOverlay.style.right = '';
+                    chatOverlay.style.width = '';
+                    chatOverlay.style.maxHeight = '';
                 }
             }
         }
@@ -215,6 +230,14 @@ class TikTokOverlay {
         const giftAlert = document.getElementById('gift-alert');
         if (giftAlert) {
             giftAlert.style.display = this.isFeatureEnabled('giftAlert') ? 'block' : 'none';
+        }
+        
+        // Update scale untuk floating photos jika ada
+        if (this.components.floatingPhotos && this.config?.floatingPhotos?.scale) {
+            const scale = this.config.floatingPhotos.scale;
+            if (this.components.floatingPhotos.config) {
+                this.components.floatingPhotos.config.scale = scale;
+            }
         }
 
         const chatOverlay = document.getElementById('chat-overlay');
@@ -309,6 +332,15 @@ class TikTokOverlay {
                 this.addFloatingPhoto(null, emojis[Math.floor(Math.random() * emojis.length)]);
             }
         });
+        
+        // Handle window resize untuk responsive chat
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.applyThemeAndPositions();
+            }, 250);
+        });
     }
 
     showFollowerAlert(username) {
@@ -339,6 +371,41 @@ class TikTokOverlay {
         }
     }
 
+    initViewerCountWidget() {
+        // Tambahkan widget viewer count ke WidgetContainer jika enabled
+        // Tunggu sedikit untuk memastikan komponen HTML sudah dimuat
+        setTimeout(() => {
+            if (!this.isFeatureEnabled('viewerCount')) return;
+            
+            const widgetContainer = document.querySelector('.widget-container');
+            if (!widgetContainer) return;
+            
+            // Cek apakah widget viewer count sudah ada
+            const existingWidget = widgetContainer.querySelector('#viewer-count-widget');
+            if (existingWidget) return;
+            
+            // Cek konfigurasi widget
+            const widgetConfig = this.config?.widgets?.viewerCount;
+            if (widgetConfig?.enabled !== false) {
+                // Buat widget viewer count
+                const widgetBox = document.createElement('div');
+                widgetBox.className = 'widget-box';
+                widgetBox.id = 'viewer-count-widget';
+                widgetBox.innerHTML = `
+                    <div class="widget-label">Penonton</div>
+                    <div class="widget-value" id="viewer-count">0</div>
+                `;
+                
+                widgetContainer.appendChild(widgetBox);
+                
+                // Update viewer count jika sudah ada nilai
+                if (this.components.viewerCount && this.components.viewerCount.count > 0) {
+                    this.components.viewerCount.update(this.components.viewerCount.count);
+                }
+            }
+        }, 200);
+    }
+
     updateViewerCount(count) {
         if (!this.isFeatureEnabled('viewerCount')) return;
         if (this.components.viewerCount) {
@@ -361,15 +428,28 @@ class TikTokOverlay {
     initFloatingPhotos() {
         if (!this.isFeatureEnabled('floatingPhotos')) return;
         if (this.components.floatingPhotos) {
+            // Update scale dari config
+            const scale = this.config?.floatingPhotos?.scale || 1.0;
+            if (this.components.floatingPhotos.config) {
+                this.components.floatingPhotos.config.scale = scale;
+            }
             this.components.floatingPhotos.init();
         }
     }
 
-    addFloatingPhoto(imageUrl = null, emoji = null) {
+    addFloatingPhoto(imageUrl = null, emoji = null, scale = null) {
         if (!this.isFeatureEnabled('floatingPhotos')) return;
         if (this.components.floatingPhotos) {
-            this.components.floatingPhotos.addPhoto(imageUrl, emoji);
+            // Jika scale tidak diberikan, gunakan scale default dari config
+            const finalScale = scale !== null ? scale : (this.config?.floatingPhotos?.scale || 1.0);
+            this.components.floatingPhotos.addPhoto(imageUrl, emoji, finalScale);
         }
+    }
+
+    shouldTriggerFloatingPhoto(triggerType) {
+        if (!this.isFeatureEnabled('floatingPhotos')) return false;
+        const triggers = this.config?.floatingPhotos?.triggers || {};
+        return triggers[triggerType] === true;
     }
 
     addFirework(imageUrl = null, emoji = null, centerX = null, centerY = null, count = 20) {
@@ -383,16 +463,41 @@ class TikTokOverlay {
         switch(eventType) {
             case 'follower':
                 this.showFollowerAlert(data.username);
-                if (this.isFeatureEnabled('floatingPhotos')) {
-                    if (data.avatarUrl && data.avatarUrl.trim() !== '') {
-                        this.addFloatingPhoto(data.profilePictureUrl, '👤');
-                    } else {
-                        this.addFloatingPhoto(null, '👤');
-                    }
+                if (this.shouldTriggerFloatingPhoto('follow')) {
+                    const avatarUrl = data.avatarUrl || data.profilePictureUrl || null;
+                    const scale = this.config?.floatingPhotos?.triggers?.followScale || 1.0;
+                    this.addFloatingPhoto(avatarUrl, '👤', scale);
                 }
                 break;
             case 'gift':
                 this.showGiftAlert(data.username, data.giftName, data.quantity, data.giftImageUrl);
+                
+                // Cek apakah gift ini memicu floating photo effect (bukan firework)
+                if (this.isFeatureEnabled('floatingPhotos') && this.config?.giftFloatingPhotos?.enabled) {
+                    const giftName = data.giftName || '';
+                    const selectionMode = this.config?.giftFloatingPhotos?.selectionMode || 'manual';
+                    let shouldTriggerFloatingPhoto = false;
+                    
+                    if (selectionMode === 'coinRange') {
+                        // Mode range coin
+                        const coinMin = this.config?.giftFloatingPhotos?.coinMin;
+                        const coinMax = this.config?.giftFloatingPhotos?.coinMax;
+                        shouldTriggerFloatingPhoto = this.isGiftInCoinRange(giftName, coinMin, coinMax);
+                    } else {
+                        // Mode manual (default)
+                        const floatingPhotosGifts = this.config?.giftFloatingPhotos?.gifts || [];
+                        // Cek apakah gift name ada dalam daftar gift floating photos (case insensitive)
+                        shouldTriggerFloatingPhoto = floatingPhotosGifts.some(gift => 
+                            gift.toLowerCase() === giftName.toLowerCase()
+                        );
+                    }
+                    
+                    if (shouldTriggerFloatingPhoto) {
+                        const avatarUrl = data.avatarUrl || data.profilePictureUrl || null;
+                        const scale = this.config?.floatingPhotos?.triggers?.giftScale || 1.0;
+                        this.addFloatingPhoto(avatarUrl, '🎁', scale);
+                    }
+                }
                 
                 // Cek apakah gift ini memicu firework effect
                 if (this.isFeatureEnabled('floatingPhotos') && this.config?.giftFirework?.enabled) {
@@ -474,12 +579,18 @@ class TikTokOverlay {
                 break;
             case 'chat':
                 this.addChatMessage(data.username, data.message);
-                if (this.isFeatureEnabled('floatingPhotos')) {
-                    if (data.avatarUrl && data.avatarUrl.trim() !== '') {
-                        this.addFloatingPhoto(data.avatarUrl, '👤');
-                    } else {
-                        this.addFloatingPhoto(null, '👤');
-                    }
+                if (this.shouldTriggerFloatingPhoto('chat')) {
+                    const avatarUrl = data.avatarUrl || null;
+                    const scale = this.config?.floatingPhotos?.triggers?.chatScale || 1.0;
+                    this.addFloatingPhoto(avatarUrl, '💬', scale);
+                }
+                break;
+            case 'share':
+                // Handle share event jika ada
+                if (this.shouldTriggerFloatingPhoto('share')) {
+                    const avatarUrl = data.avatarUrl || data.profilePictureUrl || null;
+                    const scale = this.config?.floatingPhotos?.triggers?.shareScale || 1.0;
+                    this.addFloatingPhoto(avatarUrl, '📤', scale);
                 }
                 break;
             case 'viewer':

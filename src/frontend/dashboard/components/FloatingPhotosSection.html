@@ -32,6 +32,75 @@
                     <input type="number" name="floatingPhotos.maxPhotos" id="floatingPhotosMaxPhotos" min="10" max="500" value="100" class="form-control">
                     <small class="form-text">Jumlah maksimal floating photos yang dapat ditampilkan secara bersamaan (10-500). Default: 100</small>
                 </div>
+                
+                <div class="form-group">
+                    <label for="floatingPhotosScale">Ukuran Scale</label>
+                    <input type="number" name="floatingPhotos.scale" id="floatingPhotosScale" min="0.1" max="2.0" step="0.1" value="1.0" class="form-control">
+                    <small class="form-text">Ukuran scale untuk floating photos (0.1 = kecil, 1.0 = normal, 2.0 = besar). Default: 1.0</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-bolt"></i> Trigger Settings</h3>
+            <p class="form-text">Pilih event yang akan memicu munculnya floating photo dan atur scale untuk masing-masing trigger</p>
+            
+            <div class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="floatingPhotos.triggers.chat" id="floatingPhotosTriggerChat">
+                        <span>Chat</span>
+                    </label>
+                    <small class="form-text">Muncul saat ada chat baru</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="floatingPhotosTriggerChatScale">Scale Chat</label>
+                    <input type="number" name="floatingPhotos.triggers.chatScale" id="floatingPhotosTriggerChatScale" min="0.1" max="2.0" step="0.1" value="1.0" class="form-control">
+                    <small class="form-text">Ukuran scale untuk floating photo dari chat (0.1 - 2.0)</small>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="floatingPhotos.triggers.follow" id="floatingPhotosTriggerFollow">
+                        <span>Follow</span>
+                    </label>
+                    <small class="form-text">Muncul saat ada follower baru</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="floatingPhotosTriggerFollowScale">Scale Follow</label>
+                    <input type="number" name="floatingPhotos.triggers.followScale" id="floatingPhotosTriggerFollowScale" min="0.1" max="2.0" step="0.1" value="1.0" class="form-control">
+                    <small class="form-text">Ukuran scale untuk floating photo dari follow (0.1 - 2.0)</small>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="floatingPhotos.triggers.share" id="floatingPhotosTriggerShare">
+                        <span>Share</span>
+                    </label>
+                    <small class="form-text">Muncul saat ada share</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="floatingPhotosTriggerShareScale">Scale Share</label>
+                    <input type="number" name="floatingPhotos.triggers.shareScale" id="floatingPhotosTriggerShareScale" min="0.1" max="2.0" step="0.1" value="1.0" class="form-control">
+                    <small class="form-text">Ukuran scale untuk floating photo dari share (0.1 - 2.0)</small>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="floatingPhotos.triggers.gift" id="floatingPhotosTriggerGift">
+                        <span>Gift</span>
+                    </label>
+                    <small class="form-text">Muncul saat ada gift (akan menggunakan konfigurasi gift di bawah jika diaktifkan)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="floatingPhotosTriggerGiftScale">Scale Gift</label>
+                    <input type="number" name="floatingPhotos.triggers.giftScale" id="floatingPhotosTriggerGiftScale" min="0.1" max="2.0" step="0.1" value="1.0" class="form-control">
+                    <small class="form-text">Ukuran scale untuk floating photo dari gift (0.1 - 2.0)</small>
+                </div>
             </div>
         </div>
 
@@ -43,7 +112,7 @@
         </div>
 
         <div class="subsection">
-            <h3><i class="fas fa-gift"></i> Floating Photos Effect</h3>
+            <h3><i class="fas fa-gift"></i> Floating Photos Effect untuk Gift</h3>
             <p class="form-text">Konfigurasi efek floating photo yang muncul saat gift tertentu diterima</p>
             
             <div class="form-grid">
@@ -55,6 +124,20 @@
                 </div>
                 
                 <div class="form-group">
+                    <label>Mode Pilihan Gift</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="giftFloatingPhotos.selectionMode" value="manual" id="giftFloatingPhotosModeManual" checked>
+                            <span>Pilih Gift Manual</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="giftFloatingPhotos.selectionMode" value="coinRange" id="giftFloatingPhotosModeCoinRange">
+                            <span>Pilih Berdasarkan Range Coin</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="giftFloatingPhotosGiftsGroup">
                     <label for="giftFloatingPhotosGifts">Daftar Gift</label>
                     <div class="custom-dropdown" id="giftFloatingPhotosDropdown">
                         <button type="button" class="dropdown-trigger" id="giftFloatingPhotosTrigger">
@@ -77,6 +160,33 @@
                     </div>
                     <small class="form-text">Klik untuk memilih satu atau lebih gift. Gift yang terdaftar akan memicu floating photo dengan foto profile pengirim.</small>
                 </div>
+                
+                <div class="form-group" id="giftFloatingPhotosCoinRangeGroup" style="display: none;">
+                    <label>Range Coin</label>
+                    <div class="coin-range-wrapper">
+                        <div class="coin-range-item">
+                            <label for="giftFloatingPhotosCoinMin">Min Coin</label>
+                            <input type="number" name="giftFloatingPhotos.coinMin" id="giftFloatingPhotosCoinMin" min="0" class="form-control" placeholder="0">
+                        </div>
+                        <span class="coin-range-separator">-</span>
+                        <div class="coin-range-item">
+                            <label for="giftFloatingPhotosCoinMax">Max Coin</label>
+                            <input type="number" name="giftFloatingPhotos.coinMax" id="giftFloatingPhotosCoinMax" min="0" class="form-control" placeholder="Tidak terbatas">
+                        </div>
+                    </div>
+                    <small class="form-text">Gift dengan coin dalam range ini akan memicu floating photo effect. Kosongkan max untuk tidak terbatas.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-link"></i> Overlay Link</h3>
+            <p class="form-text">Buka overlay khusus untuk floating photos effect</p>
+            <div class="form-group">
+                <a id="overlay-link-floating-photos" href="#" target="_blank" class="overlay-link-btn" style="display: inline-flex; width: auto;">
+                    <i class="fas fa-external-link-alt"></i> Buka Floating Photos Overlay
+                </a>
+                <small class="form-text">Klik untuk membuka overlay khusus floating photos di tab baru</small>
             </div>
         </div>
 
@@ -227,6 +337,17 @@
                     <input type="number" name="giftFirework.fadeOutDuration" id="giftFireworkFadeOutDuration" min="1000" max="30000" step="500" value="5000" class="form-control">
                     <small class="form-text">Waktu sebelum foto mulai menghilang (1000-30000ms). Default: 5000ms (5 detik)</small>
                 </div>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-link"></i> Overlay Link</h3>
+            <p class="form-text">Buka overlay khusus untuk firework effect</p>
+            <div class="form-group">
+                <a id="overlay-link-firework" href="#" target="_blank" class="overlay-link-btn" style="display: inline-flex; width: auto;">
+                    <i class="fas fa-external-link-alt"></i> Buka Firework Overlay
+                </a>
+                <small class="form-text">Klik untuk membuka overlay khusus firework di tab baru</small>
             </div>
         </div>
 
@@ -392,9 +513,7 @@
                 <div class="form-group">
                     <label for="giftJedagJedugMusicPath">Pilih Lagu</label>
                     <select name="giftJedagJedug.musicPath" id="giftJedagJedugMusicPath" class="form-control">
-                        <option value="/assets/music/jedag-jedug.mp3" data-duration="14000">Jedag Jedug - DJ TIKTOK TERBARU 2023 (14000ms)</option>
-                        <option value="/assets/music/jedag-jedug2.mp3" data-duration="14000">DJ TIKTOK TERBARU 2023 JEDAG JEDUG FULL BASS - DJ JUNGLE DUTCH BASS BETON (14000ms)</option>
-                        <!-- Lagu tambahan bisa ditambahkan di sini dengan format: data-duration="durasi_dalam_ms" -->
+                        <!-- Options akan diisi secara dinamis oleh JavaScript -->
                     </select>
                     <small class="form-text">Pilih lagu yang akan diputar saat efek jedag jedug aktif. Durasi lagu ditampilkan dalam tanda kurung.</small>
                 </div>
@@ -450,6 +569,17 @@
                     <input type="number" name="giftJedagJedug.disco.strobeSpeed" id="giftJedagJedugDiscoStrobeSpeed" min="30" max="200" step="10" value="80" class="form-control">
                     <small class="form-text">Kecepatan efek strobe/flash dalam milidetik. Semakin kecil semakin cepat. Default: 80ms</small>
                 </div>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3><i class="fas fa-link"></i> Overlay Link</h3>
+            <p class="form-text">Buka overlay khusus untuk jedag jedug effect</p>
+            <div class="form-group">
+                <a id="overlay-link-jedagjedug" href="#" target="_blank" class="overlay-link-btn" style="display: inline-flex; width: auto;">
+                    <i class="fas fa-external-link-alt"></i> Buka Jedag Jedug Overlay
+                </a>
+                <small class="form-text">Klik untuk membuka overlay khusus jedag jedug di tab baru</small>
             </div>
         </div>
 

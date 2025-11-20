@@ -69,6 +69,15 @@ class AddUserModal {
             return;
         }
 
+        // Validate username format: alphanumeric, titik (.), dan underscore (_)
+        const usernameWithoutAt = username.substring(1);
+        const validUsernamePattern = /^[a-zA-Z0-9._]+$/;
+        if (!validUsernamePattern.test(usernameWithoutAt)) {
+            Notification.error('Username hanya boleh mengandung huruf, angka, titik (.), dan underscore (_)');
+            usernameInput.focus();
+            return;
+        }
+
         try {
             if (submitBtn) submitBtn.disabled = true;
             if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';

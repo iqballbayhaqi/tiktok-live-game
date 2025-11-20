@@ -16,11 +16,16 @@ class FloatingPhotos {
         this.animate();
     }
 
-    addPhoto(imageUrl = null, emoji = null) {
+    addPhoto(imageUrl = null, emoji = null, scale = null) {
         if (!this.container) return;
         
         const photo = document.createElement('div');
         photo.className = 'floating-photo';
+        
+        // Apply scale - gunakan parameter jika diberikan, jika tidak gunakan dari config
+        const finalScale = scale !== null ? scale : (this.config?.scale || 1.0);
+        photo.style.transform = `scale(${finalScale})`;
+        photo.style.transformOrigin = 'center center';
         
         // Apply glow color
         const glowColors = this.getRandomGlowColor();

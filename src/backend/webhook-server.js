@@ -312,8 +312,30 @@ function getUserByCode(liveCode) {
 }
 
 function createUser(username, displayName = null, liveCode = null) {
+    // Validate username format
+    if (!username || typeof username !== 'string') {
+        return { success: false, error: 'Username is required' };
+    }
+    
+    // Normalize username: ensure it starts with @
+    let normalizedUsername = username.trim();
+    if (!normalizedUsername.startsWith('@')) {
+        normalizedUsername = `@${normalizedUsername}`;
+    }
+    
+    // Validate username format: alphanumeric, titik (.), dan underscore (_)
+    const usernameWithoutAt = normalizedUsername.substring(1);
+    const validUsernamePattern = /^[a-zA-Z0-9._]+$/;
+    if (!validUsernamePattern.test(usernameWithoutAt)) {
+        return { success: false, error: 'Username hanya boleh mengandung huruf, angka, titik (.), dan underscore (_)' };
+    }
+    
+    if (normalizedUsername === '@' || normalizedUsername.length < 2) {
+        return { success: false, error: 'Username tidak valid. Minimal 1 karakter setelah @' };
+    }
+    
     const usersData = loadUsers();
-    const existingUser = usersData.users.find(u => u.username === username);
+    const existingUser = usersData.users.find(u => u.username === normalizedUsername);
     
     if (existingUser) {
         return { success: false, error: 'User already exists' };
@@ -335,8 +357,8 @@ function createUser(username, displayName = null, liveCode = null) {
     }
     
     const newUser = {
-        username: username,
-        displayName: displayName || username,
+        username: normalizedUsername,
+        displayName: displayName || normalizedUsername,
         liveCode: liveCode,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -420,6 +442,7 @@ function broadcastToClients(event, username = null) {
         // Broadcast ke clients untuk user tertentu
         const userClients = clientsByUser.get(username);
         if (userClients) {
+            console.log(`📤 Broadcasting event "${event.type}" to ${userClients.size} client(s) for user: ${username}`);
             userClients.forEach(client => {
                 try {
                     client.write(message);
@@ -428,6 +451,8 @@ function broadcastToClients(event, username = null) {
                     userClients.delete(client);
                 }
             });
+        } else {
+            console.warn(`⚠️ No clients found for user: ${username}. Available users: ${Array.from(clientsByUser.keys()).join(', ')}`);
         }
     } else {
         // Broadcast ke semua clients (backward compatibility)
@@ -1006,6 +1031,49 @@ app.get('/api/config', (req, res) => {
     }
 });
 
+// Get list of music files
+app.get('/api/music', (req, res) => {
+    try {
+        const musicDir = path.join(__dirname, '../assets/music');
+        
+        // Check if directory exists
+        if (!fs.existsSync(musicDir)) {
+            return res.status(200).json({ success: true, music: [] });
+        }
+        
+        // Read directory and filter for audio files
+        const files = fs.readdirSync(musicDir);
+        const musicFiles = files
+            .filter(file => {
+                const ext = path.extname(file).toLowerCase();
+                return ['.mp3', '.wav', '.ogg', '.m4a', '.aac'].includes(ext);
+            })
+            .map(file => {
+                const filePath = `/assets/music/${file}`;
+                const fullPath = path.join(musicDir, file);
+                const stats = fs.statSync(fullPath);
+                
+                // Try to get duration from filename or metadata (simplified - actual duration detection would need audio library)
+                // For now, we'll return the file info and let frontend handle duration detection
+                return {
+                    path: filePath,
+                    name: file,
+                    filename: path.basename(file, path.extname(file)),
+                    size: stats.size,
+                    modified: stats.mtime
+                };
+            });
+        
+        res.status(200).json({ success: true, music: musicFiles });
+    } catch (error) {
+        console.error('Error reading music directory:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 // Save config.json
 app.put('/api/config', (req, res) => {
     try {
@@ -1330,7 +1398,215 @@ app.delete('/api/users/:username/logs', (req, res) => {
 // Route Dinamis untuk Overlay per User
 // ============================================
 
+// IMPORTANT: Route yang lebih spesifik harus didefinisikan SEBELUM route yang lebih umum
+// Urutan: /live/floating-photos/:id, /live/firework/:id, /live/jedagjedug/:id, /live/chat/:id, /live/follower-alert/:id, /live/gift-alert/:id, kemudian /live/:code
+
+// Route untuk floating-photos overlay: /live/floating-photos/:id
+app.get('/live/floating-photos/:id', (req, res) => {
+    const { id } = req.params;
+    const user = getUserByCode(id);
+    
+    if (!user) {
+        return res.status(404).send(`
+            <html>
+                <head><title>Live Code Not Found</title></head>
+                <body>
+                    <h1>Live code tidak ditemukan</h1>
+                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
+                    <p><a href="/api/users">Lihat daftar users</a></p>
+                </body>
+            </html>
+        `);
+    }
+    
+    if (!user.active) {
+        return res.status(403).send(`
+            <html>
+                <head><title>User Inactive</title></head>
+                <body>
+                    <h1>User tidak aktif</h1>
+                    <p>User dengan live code "${id}" tidak aktif.</p>
+                </body>
+            </html>
+        `);
+    }
+    
+    // Serve floating-photos overlay HTML
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/floating-photos.html'));
+});
+
+// Route untuk firework overlay: /live/firework/:id
+app.get('/live/firework/:id', (req, res) => {
+    const { id } = req.params;
+    const user = getUserByCode(id);
+    
+    if (!user) {
+        return res.status(404).send(`
+            <html>
+                <head><title>Live Code Not Found</title></head>
+                <body>
+                    <h1>Live code tidak ditemukan</h1>
+                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
+                    <p><a href="/api/users">Lihat daftar users</a></p>
+                </body>
+            </html>
+        `);
+    }
+    
+    if (!user.active) {
+        return res.status(403).send(`
+            <html>
+                <head><title>User Inactive</title></head>
+                <body>
+                    <h1>User tidak aktif</h1>
+                    <p>User dengan live code "${id}" tidak aktif.</p>
+                </body>
+            </html>
+        `);
+    }
+    
+    // Serve firework overlay HTML
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/firework.html'));
+});
+
+// Route untuk jedagjedug overlay: /live/jedagjedug/:id
+app.get('/live/jedagjedug/:id', (req, res) => {
+    const { id } = req.params;
+    const user = getUserByCode(id);
+    
+    if (!user) {
+        return res.status(404).send(`
+            <html>
+                <head><title>Live Code Not Found</title></head>
+                <body>
+                    <h1>Live code tidak ditemukan</h1>
+                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
+                    <p><a href="/api/users">Lihat daftar users</a></p>
+                </body>
+            </html>
+        `);
+    }
+    
+    if (!user.active) {
+        return res.status(403).send(`
+            <html>
+                <head><title>User Inactive</title></head>
+                <body>
+                    <h1>User tidak aktif</h1>
+                    <p>User dengan live code "${id}" tidak aktif.</p>
+                </body>
+            </html>
+        `);
+    }
+    
+    // Serve jedagjedug overlay HTML
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/jedagjedug.html'));
+});
+
+// Route untuk chat overlay: /live/chat/:id
+app.get('/live/chat/:id', (req, res) => {
+    const { id } = req.params;
+    const user = getUserByCode(id);
+    
+    if (!user) {
+        return res.status(404).send(`
+            <html>
+                <head><title>Live Code Not Found</title></head>
+                <body>
+                    <h1>Live code tidak ditemukan</h1>
+                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
+                    <p><a href="/api/users">Lihat daftar users</a></p>
+                </body>
+            </html>
+        `);
+    }
+    
+    if (!user.active) {
+        return res.status(403).send(`
+            <html>
+                <head><title>User Inactive</title></head>
+                <body>
+                    <h1>User tidak aktif</h1>
+                    <p>User dengan live code "${id}" tidak aktif.</p>
+                </body>
+            </html>
+        `);
+    }
+    
+    // Serve chat overlay HTML
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/chat.html'));
+});
+
+// Route untuk follower alert overlay: /live/follower-alert/:id
+app.get('/live/follower-alert/:id', (req, res) => {
+    const { id } = req.params;
+    const user = getUserByCode(id);
+    
+    if (!user) {
+        return res.status(404).send(`
+            <html>
+                <head><title>Live Code Not Found</title></head>
+                <body>
+                    <h1>Live code tidak ditemukan</h1>
+                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
+                    <p><a href="/api/users">Lihat daftar users</a></p>
+                </body>
+            </html>
+        `);
+    }
+    
+    if (!user.active) {
+        return res.status(403).send(`
+            <html>
+                <head><title>User Inactive</title></head>
+                <body>
+                    <h1>User tidak aktif</h1>
+                    <p>User dengan live code "${id}" tidak aktif.</p>
+                </body>
+            </html>
+        `);
+    }
+    
+    // Serve follower alert overlay HTML
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/follower-alert.html'));
+});
+
+// Route untuk gift alert overlay: /live/gift-alert/:id
+app.get('/live/gift-alert/:id', (req, res) => {
+    const { id } = req.params;
+    const user = getUserByCode(id);
+    
+    if (!user) {
+        return res.status(404).send(`
+            <html>
+                <head><title>Live Code Not Found</title></head>
+                <body>
+                    <h1>Live code tidak ditemukan</h1>
+                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
+                    <p><a href="/api/users">Lihat daftar users</a></p>
+                </body>
+            </html>
+        `);
+    }
+    
+    if (!user.active) {
+        return res.status(403).send(`
+            <html>
+                <head><title>User Inactive</title></head>
+                <body>
+                    <h1>User tidak aktif</h1>
+                    <p>User dengan live code "${id}" tidak aktif.</p>
+                </body>
+            </html>
+        `);
+    }
+    
+    // Serve gift alert overlay HTML
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/gift-alert.html'));
+});
+
 // Route dinamis untuk overlay per user: /live/:code
+// HARUS didefinisikan SETELAH route spesifik di atas agar tidak conflict
 app.get('/live/:code', (req, res) => {
     const { code } = req.params;
     const user = getUserByCode(code);
@@ -1649,13 +1925,7 @@ app.post('/webhook/:username/floating-photo', (req, res) => {
     
     const { imageUrl, emoji } = req.body;
     
-    if (!imageUrl && !emoji) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Either imageUrl or emoji is required' 
-        });
-    }
-    
+    // Tidak perlu validasi strict, biarkan null jika tidak ada
     const event = {
         type: 'floating-photo',
         data: {
@@ -1664,8 +1934,9 @@ app.post('/webhook/:username/floating-photo', (req, res) => {
         }
     };
     
+    console.log(`🖼️ Floating photo event for ${targetUsername}:`, event);
     broadcastToClients(event, targetUsername);
-    console.log(`🖼️ Floating photo event for ${targetUsername}`);
+    console.log(`📡 Broadcasted to clients for user: ${targetUsername}`);
     
     res.status(200).json({ success: true, event });
 });
@@ -1695,8 +1966,9 @@ app.post('/webhook/:username/firework', (req, res) => {
         }
     };
     
+    console.log(`🎆 Firework event for ${targetUsername}:`, event);
     broadcastToClients(event, targetUsername);
-    console.log(`🎆 Firework event for ${targetUsername}`);
+    console.log(`📡 Broadcasted to clients for user: ${targetUsername}`);
     
     res.status(200).json({ success: true, event });
 });
