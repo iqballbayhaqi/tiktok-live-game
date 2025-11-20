@@ -314,9 +314,58 @@ function mergeConfig(config) {
     // Merge floatingPhotos config jika ada
     const floatingPhotosConfig = config.floatingPhotos || defaultConfig.floatingPhotos;
 
+    // Merge alerts dengan default structure
+    const alerts = {
+        follower: {
+            ...defaultConfig.alerts.follower,
+            ...config.alerts?.follower,
+            enabled: getDefaultValue(config.alerts?.follower?.enabled, defaultConfig.alerts.follower.enabled)
+        },
+        gift: {
+            ...defaultConfig.alerts.gift,
+            ...config.alerts?.gift,
+            enabled: getDefaultValue(config.alerts?.gift?.enabled, defaultConfig.alerts.gift.enabled)
+        }
+    };
+
+    // Merge chat dengan default structure
+    const chat = {
+        ...defaultConfig.chat,
+        ...config.chat,
+        enabled: getDefaultValue(config.chat?.enabled, defaultConfig.chat.enabled)
+    };
+
+    // Merge widgets dengan default structure
+    const widgets = {
+        ...defaultConfig.widgets,
+        ...config.widgets,
+        streamTimer: {
+            ...defaultConfig.widgets.streamTimer,
+            ...config.widgets?.streamTimer,
+            enabled: getDefaultValue(config.widgets?.streamTimer?.enabled, defaultConfig.widgets.streamTimer.enabled)
+        },
+        viewerCount: {
+            ...defaultConfig.widgets.viewerCount,
+            ...config.widgets?.viewerCount,
+            enabled: getDefaultValue(config.widgets?.viewerCount?.enabled, defaultConfig.widgets.viewerCount.enabled)
+        }
+    };
+
+    // Merge animations dengan default structure
+    const animations = {
+        ...defaultConfig.animations,
+        ...config.animations,
+        enabled: getDefaultValue(config.animations?.enabled, defaultConfig.animations.enabled)
+    };
+
     return {
+        ...defaultConfig,
         ...config,
         features: featureFlags,
+        alerts: alerts,
+        chat: chat,
+        widgets: widgets,
+        animations: animations,
         floatingPhotos: floatingPhotosConfig,
         // Helper method untuk check apakah fitur enabled
         isFeatureEnabled: function(featureName) {
@@ -329,12 +378,25 @@ function mergeConfig(config) {
 function syncConfigFlags() {
     if (!OverlayConfig) return;
     
-    OverlayConfig.alerts.follower.enabled = OverlayConfig.features.followerAlert;
-    OverlayConfig.alerts.gift.enabled = OverlayConfig.features.giftAlert;
-    OverlayConfig.chat.enabled = OverlayConfig.features.chatOverlay;
-    OverlayConfig.widgets.streamTimer.enabled = OverlayConfig.features.streamTimer;
-    OverlayConfig.widgets.viewerCount.enabled = OverlayConfig.features.viewerCount;
-    OverlayConfig.animations.enabled = OverlayConfig.features.animations;
+    // Pastikan semua property ada sebelum mengakses
+    if (OverlayConfig.alerts?.follower) {
+        OverlayConfig.alerts.follower.enabled = OverlayConfig.features?.followerAlert ?? true;
+    }
+    if (OverlayConfig.alerts?.gift) {
+        OverlayConfig.alerts.gift.enabled = OverlayConfig.features?.giftAlert ?? true;
+    }
+    if (OverlayConfig.chat) {
+        OverlayConfig.chat.enabled = OverlayConfig.features?.chatOverlay ?? true;
+    }
+    if (OverlayConfig.widgets?.streamTimer) {
+        OverlayConfig.widgets.streamTimer.enabled = OverlayConfig.features?.streamTimer ?? true;
+    }
+    if (OverlayConfig.widgets?.viewerCount) {
+        OverlayConfig.widgets.viewerCount.enabled = OverlayConfig.features?.viewerCount ?? true;
+    }
+    if (OverlayConfig.animations) {
+        OverlayConfig.animations.enabled = OverlayConfig.features?.animations ?? true;
+    }
 }
 
 // Load config saat file dimuat

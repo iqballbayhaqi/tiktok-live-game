@@ -383,6 +383,24 @@ function connectWebhookServer() {
                 return;
             }
             
+            if (data.type === 'state-sync' && data.data && overlay) {
+                console.log('🔄 State sync received, synchronizing chat overlay...');
+                // Sync chat messages
+                if (data.data.chatMessages && Array.isArray(data.data.chatMessages) && overlay.components.chatOverlay) {
+                    overlay.components.chatOverlay.clearMessages();
+                    data.data.chatMessages.forEach(msg => {
+                        overlay.components.chatOverlay.addMessage(msg.username, msg.message);
+                    });
+                    console.log(`✅ Synced ${data.data.chatMessages.length} chat messages`);
+                }
+                // Sync viewer count
+                if (data.data.viewerCount !== undefined && overlay.components.viewerCount) {
+                    overlay.components.viewerCount.update(data.data.viewerCount);
+                    console.log(`✅ Synced viewer count: ${data.data.viewerCount}`);
+                }
+                return;
+            }
+            
             // Proses event sesuai config trigger setting
             // Event yang didukung: chat, viewer
             const supportedEvents = ['chat', 'viewer'];

@@ -763,6 +763,29 @@ function connectWebhookServer() {
                 return;
             }
             
+            if (data.type === 'state-sync' && data.data && overlay) {
+                console.log('🔄 State sync received, synchronizing overlay...');
+                // Sync chat messages
+                if (data.data.chatMessages && Array.isArray(data.data.chatMessages) && overlay.components.chatOverlay) {
+                    overlay.components.chatOverlay.clearMessages();
+                    data.data.chatMessages.forEach(msg => {
+                        overlay.components.chatOverlay.addMessage(msg.username, msg.message);
+                    });
+                    console.log(`✅ Synced ${data.data.chatMessages.length} chat messages`);
+                }
+                // Sync viewer count
+                if (data.data.viewerCount !== undefined && overlay.components.viewerCount) {
+                    overlay.components.viewerCount.update(data.data.viewerCount);
+                    console.log(`✅ Synced viewer count: ${data.data.viewerCount}`);
+                }
+                // Sync banner text
+                if (data.data.bannerText !== null && data.data.bannerText !== undefined && overlay.components.customBanner) {
+                    overlay.components.customBanner.showBanner(data.data.bannerText);
+                    console.log(`✅ Synced banner text`);
+                }
+                return;
+            }
+            
             if (data.type && data.data && overlay) {
                 overlay.triggerEvent(data.type, data.data);
             }

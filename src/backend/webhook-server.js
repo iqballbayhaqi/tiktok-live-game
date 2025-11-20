@@ -7,10 +7,33 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
+const { body, query, validationResult } = require('express-validator');
 const TikTokConnector = require('./tiktok-connector');
+const {
+    securityHeaders,
+    apiLimiter,
+    webhookLimiter,
+    userManagementLimiter,
+    sseLimiter,
+    sanitizeString,
+    escapeHtml,
+    sanitizeUsername,
+    validatePath,
+    validateUsernameParam,
+    validateLiveCodeParam,
+    validateCreateUser,
+    validateWebhookFollower,
+    validateWebhookGift,
+    validateWebhookChat,
+    validateWebhookBanner,
+    validateWebhookFloatingPhoto
+} = require('./security-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// JSON payload size limit (10MB)
+const JSON_SIZE_LIMIT = '10mb';
 
 // Load config dari config.json
 let overlayConfig = null;
@@ -117,14 +140,46 @@ function isFeatureEnabled(featureName, defaultValue = true) {
     return defaultValue;
 }
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Security Middleware - HARUS di awal
+app.use(securityHeaders);
+
+// CORS Configuration - lebih aman
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['*']; // Default allow all untuk development
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, etc)
+        if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+}));
+
+// Body parser dengan size limit
+app.use(bodyParser.json({ limit: JSON_SIZE_LIMIT }));
+app.use(bodyParser.urlencoded({ extended: true, limit: JSON_SIZE_LIMIT }));
+
+// Error handler untuk JSON parsing errors
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid JSON payload atau payload terlalu besar'
+        });
+    }
+    next(err);
+});
 
 // Landing page - route utama (harus sebelum static files)
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/client/pages/landing.html'));
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/landing/index.html'));
 });
 
 // Serve static files untuk Dashboard
@@ -138,6 +193,8 @@ app.use('/js', express.static(path.join(__dirname, '../frontend/client/js')));
 app.use('/components', express.static(path.join(__dirname, '../frontend/client/components')));
 // Serve static files untuk live-code-not-found
 app.use('/live-code-not-found', express.static(path.join(__dirname, '../frontend/client/pages/live-code-not-found')));
+// Serve static files untuk landing page
+app.use('/landing', express.static(path.join(__dirname, '../frontend/client/pages/landing')));
 
 // Serve shared files
 app.use('/shared/js', express.static(path.join(__dirname, '../frontend/shared/js')));
@@ -166,13 +223,35 @@ let tiktokConnector = null; // Untuk backward compatibility
 const userLogs = new Map();
 const MAX_LOG_ENTRIES = 500; // Maksimal 500 log entries per user
 
+// State storage per user untuk sinkronisasi antar overlay
+// Struktur: { username: { chatMessages: [], viewerCount: 0, bannerText: null, ... } }
+const userState = new Map();
+const MAX_CHAT_MESSAGES = 100; // Maksimal chat messages yang disimpan per user
+
 // Helper functions untuk manage users
 function getUsersFilePath() {
     return path.join(__dirname, '../../config/users.json');
 }
 
 function getUserConfigPath(username) {
-    return path.join(__dirname, '../../config/users', `${username}.json`);
+    // Sanitize username untuk mencegah path traversal
+    const sanitized = sanitizeUsername(username);
+    if (!sanitized) {
+        throw new Error('Invalid username');
+    }
+    
+    // Remove @ dari username untuk filename
+    const filename = sanitized.substring(1) + '.json';
+    
+    // Validate path
+    const configPath = path.join(__dirname, '../../config/users', filename);
+    const allowedBaseDir = path.join(__dirname, '../../config/users');
+    
+    if (!validatePath(configPath, allowedBaseDir)) {
+        throw new Error('Invalid file path');
+    }
+    
+    return configPath;
 }
 
 // Generate unique live code untuk user
@@ -313,13 +392,53 @@ function getUserByCode(liveCode) {
     return usersData.users.find(u => u.liveCode === liveCode);
 }
 
+// Helper function untuk mendapatkan atau menginisialisasi state user
+function getUserState(username) {
+    if (!userState.has(username)) {
+        userState.set(username, {
+            chatMessages: [],
+            viewerCount: 0,
+            bannerText: null,
+            lastUpdate: Date.now()
+        });
+    }
+    return userState.get(username);
+}
+
+// Helper function untuk mengirim state sync ke client baru
+function sendStateSync(client, username) {
+    const state = getUserState(username);
+    const syncEvent = {
+        type: 'state-sync',
+        data: {
+            chatMessages: state.chatMessages.slice(-MAX_CHAT_MESSAGES), // Kirim maksimal MAX_CHAT_MESSAGES terakhir
+            viewerCount: state.viewerCount,
+            bannerText: state.bannerText
+        }
+    };
+    
+    try {
+        client.write(`data: ${JSON.stringify(syncEvent)}\n\n`);
+        console.log(`📤 State sync sent to new client for user: ${username}`);
+    } catch (error) {
+        console.error(`Error sending state sync to client for ${username}:`, error);
+    }
+}
+
 // Helper function untuk membuat halaman error "Live code tidak ditemukan"
 function renderLiveCodeNotFoundPage(code) {
     try {
+        // Validate path untuk mencegah path traversal
         const errorPagePath = path.join(__dirname, '../frontend/client/pages/live-code-not-found/index.html');
+        const allowedBaseDir = path.join(__dirname, '../frontend/client/pages/live-code-not-found');
+        
+        if (!validatePath(errorPagePath, allowedBaseDir)) {
+            throw new Error('Invalid file path');
+        }
+        
         let html = fs.readFileSync(errorPagePath, 'utf8');
         // Escape HTML untuk mencegah XSS
-        const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const escapedCode = escapeHtml(code);
         // Replace placeholder dengan code yang sudah di-escape
         html = html.replace('{{CODE}}', `"${escapedCode}"`);
         // Update path CSS dan JS agar relatif terhadap folder live-code-not-found
@@ -328,16 +447,18 @@ function renderLiveCodeNotFoundPage(code) {
         return html;
     } catch (error) {
         console.error('Error loading live-code-not-found/index.html:', error);
-        // Fallback jika file tidak ditemukan
+        // Fallback jika file tidak ditemukan - dengan XSS protection
+        const escapedCode = escapeHtml(code);
         return `<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
     <title>Live Code Tidak Ditemukan</title>
 </head>
 <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #000; color: #fff;">
     <h1>Live code tidak ditemukan</h1>
-    <p>Live code "${code}" tidak ditemukan atau tidak valid.</p>
+    <p>Live code "${escapedCode}" tidak ditemukan atau tidak valid.</p>
     <a href="#" id="back-btn" style="color: #FE2C55; text-decoration: none; font-weight: 600;">Kembali</a>
     <script>
         (function() {
@@ -354,10 +475,12 @@ function renderLiveCodeNotFoundPage(code) {
                 }
             }
             
-            backBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                goBack();
-            });
+            if (backBtn) {
+                backBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    goBack();
+                });
+            }
         })();
     </script>
 </body>
@@ -560,11 +683,19 @@ function initTikTokConnector() {
 }
 
 // Webhook endpoint untuk TikTok Live events
-app.post('/webhook/tiktok', (req, res) => {
+app.post('/webhook/tiktok', webhookLimiter, (req, res) => {
     try {
         const event = req.body;
         
-        console.log('📥 Webhook received:', event);
+        // Validate event structure
+        if (!event || typeof event !== 'object') {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid event data'
+            });
+        }
+        
+        console.log('📥 Webhook received:', event.type || 'unknown');
         
         // Broadcast ke semua connected clients
         broadcastToClients(event);
@@ -578,13 +709,13 @@ app.post('/webhook/tiktok', (req, res) => {
         console.error('❌ Webhook error:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' // Jangan expose error message detail
         });
     }
 });
 
 // Endpoint untuk follower event
-app.post('/webhook/follower', (req, res) => {
+app.post('/webhook/follower', webhookLimiter, validateWebhookFollower, (req, res) => {
     // Check feature flag
     if (!isFeatureEnabled('FOLLOWER_ALERT', true)) {
         return res.status(200).json({ 
@@ -596,29 +727,22 @@ app.post('/webhook/follower', (req, res) => {
     
     const { username, avatarUrl } = req.body;
     
-    if (!username) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Username is required' 
-        });
-    }
-    
     const event = {
         type: 'follower',
         data: {
-            username: username,
+            username: sanitizeString(username),
             avatarUrl: avatarUrl || null
         }
     };
     
     broadcastToClients(event);
-    console.log(`👋 Follower event: ${username}`);
+    console.log(`👋 Follower event: ${sanitizeString(username)}`);
     
     res.status(200).json({ success: true, event });
 });
 
 // Endpoint untuk gift event
-app.post('/webhook/gift', (req, res) => {
+app.post('/webhook/gift', webhookLimiter, validateWebhookGift, (req, res) => {
     // Check feature flag
     if (!isFeatureEnabled('GIFT_ALERT', true)) {
         return res.status(200).json({ 
@@ -630,18 +754,11 @@ app.post('/webhook/gift', (req, res) => {
     
     const { username, giftName, quantity, avatarUrl, giftImageUrl } = req.body;
     
-    if (!username || !giftName || !quantity) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Username, giftName, and quantity are required' 
-        });
-    }
-    
     const event = {
         type: 'gift',
         data: {
-            username: username,
-            giftName: giftName,
+            username: sanitizeString(username),
+            giftName: sanitizeString(giftName),
             quantity: parseInt(quantity),
             avatarUrl: avatarUrl || null,
             giftImageUrl: giftImageUrl || null
@@ -649,13 +766,13 @@ app.post('/webhook/gift', (req, res) => {
     };
     
     broadcastToClients(event);
-    console.log(`🎁 Gift event: ${username} - ${quantity}x ${giftName}`);
+    console.log(`🎁 Gift event: ${sanitizeString(username)} - ${quantity}x ${sanitizeString(giftName)}`);
     
     res.status(200).json({ success: true, event });
 });
 
 // Endpoint untuk chat event
-app.post('/webhook/chat', (req, res) => {
+app.post('/webhook/chat', webhookLimiter, validateWebhookChat, (req, res) => {
     // Check feature flag
     if (!isFeatureEnabled('CHAT_OVERLAY', true)) {
         return res.status(200).json({ 
@@ -667,29 +784,36 @@ app.post('/webhook/chat', (req, res) => {
     
     const { username, message } = req.body;
     
-    if (!username || !message) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Username and message are required' 
-        });
-    }
-    
     const event = {
         type: 'chat',
         data: {
-            username: username,
-            message: message
+            username: sanitizeString(username),
+            message: sanitizeString(message)
         }
     };
     
     broadcastToClients(event);
-    console.log(`💬 Chat event: ${username}: ${message}`);
+    console.log(`💬 Chat event: ${sanitizeString(username)}: ${sanitizeString(message)}`);
     
     res.status(200).json({ success: true, event });
 });
 
 // Endpoint untuk viewer count update
-app.post('/webhook/viewer', (req, res) => {
+app.post('/webhook/viewer', webhookLimiter, [
+    body('count')
+        .notEmpty()
+        .withMessage('Count wajib diisi')
+        .isInt({ min: 0, max: 100000000 })
+        .withMessage('Count harus berupa angka antara 0-100000000')
+], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            error: errors.array()[0].msg
+        });
+    }
+    
     // Check feature flag
     if (!isFeatureEnabled('VIEWER_COUNT', true)) {
         return res.status(200).json({ 
@@ -700,13 +824,6 @@ app.post('/webhook/viewer', (req, res) => {
     }
     
     const { count } = req.body;
-    
-    if (count === undefined) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Count is required' 
-        });
-    }
     
     const event = {
         type: 'viewer',
@@ -722,7 +839,7 @@ app.post('/webhook/viewer', (req, res) => {
 });
 
 // Endpoint untuk custom banner
-app.post('/webhook/banner', (req, res) => {
+app.post('/webhook/banner', webhookLimiter, validateWebhookBanner, (req, res) => {
     // Check feature flag
     if (!isFeatureEnabled('CUSTOM_BANNER', true)) {
         return res.status(200).json({ 
@@ -734,28 +851,21 @@ app.post('/webhook/banner', (req, res) => {
     
     const { text } = req.body;
     
-    if (!text) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Text is required' 
-        });
-    }
-    
     const event = {
         type: 'banner',
         data: {
-            text: text
+            text: sanitizeString(text)
         }
     };
     
     broadcastToClients(event);
-    console.log(`📢 Banner: ${text}`);
+    console.log(`📢 Banner: ${sanitizeString(text)}`);
     
     res.status(200).json({ success: true, event });
 });
 
 // Endpoint untuk floating photo
-app.post('/webhook/floating-photo', (req, res) => {
+app.post('/webhook/floating-photo', webhookLimiter, validateWebhookFloatingPhoto, (req, res) => {
     // Check feature flag
     if (!isFeatureEnabled('FLOATING_PHOTOS', true)) {
         return res.status(200).json({ 
@@ -778,7 +888,7 @@ app.post('/webhook/floating-photo', (req, res) => {
         type: 'floating-photo',
         data: {
             imageUrl: imageUrl || null,
-            emoji: emoji || null
+            emoji: emoji ? sanitizeString(emoji) : null
         }
     };
     
@@ -789,11 +899,11 @@ app.post('/webhook/floating-photo', (req, res) => {
 });
 
 // Server-Sent Events untuk real-time updates ke overlay
-app.get('/events', (req, res) => {
+app.get('/events', sseLimiter, (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering untuk nginx
     
     clients.add(res);
     
@@ -1070,9 +1180,18 @@ app.get('/tiktok/gifts', async (req, res) => {
 
 // API endpoints untuk config management
 // Get config.json
-app.get('/api/config', (req, res) => {
+app.get('/api/config', apiLimiter, (req, res) => {
     try {
         const configPath = path.join(__dirname, '../../config/config.json');
+        const allowedBaseDir = path.join(__dirname, '../../config');
+        
+        if (!validatePath(configPath, allowedBaseDir)) {
+            return res.status(500).json({
+                success: false,
+                error: 'Invalid file path'
+            });
+        }
+        
         const configData = fs.readFileSync(configPath, 'utf8');
         const config = JSON.parse(configData);
         res.status(200).json({ success: true, config });
@@ -1080,15 +1199,16 @@ app.get('/api/config', (req, res) => {
         console.error('Error reading config:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
 
 // Get list of music files
-app.get('/api/music', (req, res) => {
+app.get('/api/music', apiLimiter, (req, res) => {
     try {
         const musicDir = path.join(__dirname, '../assets/music');
+        const allowedBaseDir = path.join(__dirname, '../assets/music');
         
         // Check if directory exists
         if (!fs.existsSync(musicDir)) {
@@ -1099,16 +1219,25 @@ app.get('/api/music', (req, res) => {
         const files = fs.readdirSync(musicDir);
         const musicFiles = files
             .filter(file => {
+                // Validate filename untuk mencegah path traversal
+                if (file.includes('..') || file.includes('/') || file.includes('\\')) {
+                    return false;
+                }
+                
                 const ext = path.extname(file).toLowerCase();
                 return ['.mp3', '.wav', '.ogg', '.m4a', '.aac'].includes(ext);
             })
             .map(file => {
-                const filePath = `/assets/music/${file}`;
                 const fullPath = path.join(musicDir, file);
-                const stats = fs.statSync(fullPath);
                 
-                // Try to get duration from filename or metadata (simplified - actual duration detection would need audio library)
-                // For now, we'll return the file info and let frontend handle duration detection
+                // Validate path
+                if (!validatePath(fullPath, allowedBaseDir)) {
+                    return null;
+                }
+                
+                const stats = fs.statSync(fullPath);
+                const filePath = `/assets/music/${encodeURIComponent(file)}`;
+                
                 return {
                     path: filePath,
                     name: file,
@@ -1116,20 +1245,21 @@ app.get('/api/music', (req, res) => {
                     size: stats.size,
                     modified: stats.mtime
                 };
-            });
+            })
+            .filter(file => file !== null); // Remove invalid files
         
         res.status(200).json({ success: true, music: musicFiles });
     } catch (error) {
         console.error('Error reading music directory:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
 
 // Save config.json
-app.put('/api/config', (req, res) => {
+app.put('/api/config', userManagementLimiter, (req, res) => {
     try {
         const { config } = req.body;
         
@@ -1141,9 +1271,25 @@ app.put('/api/config', (req, res) => {
         }
 
         // Validate JSON structure
-        JSON.stringify(config);
+        try {
+            JSON.stringify(config);
+        } catch (error) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid config structure'
+            });
+        }
 
         const configPath = path.join(__dirname, '../../config/config.json');
+        const allowedBaseDir = path.join(__dirname, '../../config');
+        
+        if (!validatePath(configPath, allowedBaseDir)) {
+            return res.status(500).json({
+                success: false,
+                error: 'Invalid file path'
+            });
+        }
+        
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
         
         // Reload config in memory
@@ -1168,7 +1314,7 @@ app.put('/api/config', (req, res) => {
         console.error('Error saving config:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
@@ -1178,7 +1324,7 @@ app.put('/api/config', (req, res) => {
 // ============================================
 
 // Get all users
-app.get('/api/users', (req, res) => {
+app.get('/api/users', apiLimiter, (req, res) => {
     try {
         const usersData = loadUsers();
         res.status(200).json({ success: true, users: usersData.users });
@@ -1186,13 +1332,13 @@ app.get('/api/users', (req, res) => {
         console.error('Error loading users:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
 
 // Get user by username
-app.get('/api/users/:username', (req, res) => {
+app.get('/api/users/:username', apiLimiter, validateUsernameParam, (req, res) => {
     try {
         const { username } = req.params;
         const user = getUserByUsername(username);
@@ -1209,22 +1355,15 @@ app.get('/api/users/:username', (req, res) => {
         console.error('Error loading user:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
 
 // Create new user
-app.post('/api/users', (req, res) => {
+app.post('/api/users', userManagementLimiter, validateCreateUser, (req, res) => {
     try {
         const { username, displayName } = req.body;
-        
-        if (!username) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Username is required' 
-            });
-        }
         
         const result = createUser(username, displayName);
         
@@ -1244,19 +1383,24 @@ app.post('/api/users', (req, res) => {
         console.error('Error creating user:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
 
 // Update user
-app.put('/api/users/:username', (req, res) => {
+app.put('/api/users/:username', userManagementLimiter, validateUsernameParam, (req, res) => {
     try {
         const { username } = req.params;
         const updates = req.body;
         
         // Jangan izinkan update username
         delete updates.username;
+        
+        // Sanitize displayName jika ada
+        if (updates.displayName) {
+            updates.displayName = sanitizeString(updates.displayName);
+        }
         
         const result = updateUser(username, updates);
         
@@ -1276,13 +1420,13 @@ app.put('/api/users/:username', (req, res) => {
         console.error('Error updating user:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
 
 // Delete user
-app.delete('/api/users/:username', (req, res) => {
+app.delete('/api/users/:username', userManagementLimiter, validateUsernameParam, (req, res) => {
     try {
         const { username } = req.params;
         const result = deleteUser(username);
@@ -1302,7 +1446,7 @@ app.delete('/api/users/:username', (req, res) => {
         console.error('Error deleting user:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
@@ -1312,7 +1456,7 @@ app.delete('/api/users/:username', (req, res) => {
 // ============================================
 
 // Get config untuk user tertentu
-app.get('/api/users/:username/config', (req, res) => {
+app.get('/api/users/:username/config', apiLimiter, validateUsernameParam, (req, res) => {
     try {
         const { username } = req.params;
         const user = getUserByUsername(username);
@@ -1330,13 +1474,13 @@ app.get('/api/users/:username/config', (req, res) => {
         console.error('Error loading user config:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
 
 // Save config untuk user tertentu
-app.put('/api/users/:username/config', (req, res) => {
+app.put('/api/users/:username/config', userManagementLimiter, validateUsernameParam, (req, res) => {
     try {
         const { username } = req.params;
         const { config } = req.body;
@@ -1357,7 +1501,14 @@ app.put('/api/users/:username/config', (req, res) => {
         }
 
         // Validate JSON structure
-        JSON.stringify(config);
+        try {
+            JSON.stringify(config);
+        } catch (error) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid config structure'
+            });
+        }
 
         if (saveUserConfig(username, config)) {
             // Broadcast config update ke clients untuk user ini
@@ -1386,7 +1537,7 @@ app.put('/api/users/:username/config', (req, res) => {
         console.error('Error saving user config:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
@@ -1396,7 +1547,20 @@ app.put('/api/users/:username/config', (req, res) => {
 // ============================================
 
 // Get logs untuk user tertentu
-app.get('/api/users/:username/logs', (req, res) => {
+app.get('/api/users/:username/logs', apiLimiter, validateUsernameParam, [
+    query('limit')
+        .optional()
+        .isInt({ min: 1, max: 1000 })
+        .withMessage('Limit harus antara 1-1000')
+], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            error: errors.array()[0].msg
+        });
+    }
+    
     try {
         const { username } = req.params;
         const limit = parseInt(req.query.limit) || 100;
@@ -1415,13 +1579,13 @@ app.get('/api/users/:username/logs', (req, res) => {
         console.error('Error loading user logs:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
 
 // Clear logs untuk user tertentu
-app.delete('/api/users/:username/logs', (req, res) => {
+app.delete('/api/users/:username/logs', userManagementLimiter, validateUsernameParam, (req, res) => {
     try {
         const { username } = req.params;
         
@@ -1443,7 +1607,7 @@ app.delete('/api/users/:username/logs', (req, res) => {
         console.error('Error clearing user logs:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: 'Internal server error' 
         });
     }
 });
@@ -1456,7 +1620,7 @@ app.delete('/api/users/:username/logs', (req, res) => {
 // Urutan: /live/floating-photos/:id, /live/firework/:id, /live/jedagjedug/:id, /live/chat/:id, /live/follower-alert/:id, /live/gift-alert/:id, kemudian /live/:code
 
 // Route untuk floating-photos overlay: /live/floating-photos/:id
-app.get('/live/floating-photos/:id', (req, res) => {
+app.get('/live/floating-photos/:id', validateLiveCodeParam, (req, res) => {
     const { id } = req.params;
     const user = getUserByCode(id);
     
@@ -1465,19 +1629,34 @@ app.get('/live/floating-photos/:id', (req, res) => {
     }
     
     if (!user.active) {
+        const escapedId = escapeHtml(id);
         return res.status(403).send(`
             <html>
-                <head><title>User Inactive</title></head>
+                <head>
+                    <title>User Inactive</title>
+                    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+                </head>
                 <body>
                     <h1>User tidak aktif</h1>
-                    <p>User dengan live code "${id}" tidak aktif.</p>
+                    <p>User dengan live code "${escapedId}" tidak aktif.</p>
                 </body>
             </html>
         `);
     }
     
+    // Validate path
+    const overlayPath = path.join(__dirname, '../frontend/client/pages/floating-photos/index.html');
+    const allowedBaseDir = path.join(__dirname, '../frontend/client/pages/floating-photos');
+    
+    if (!validatePath(overlayPath, allowedBaseDir)) {
+        return res.status(500).json({
+            success: false,
+            error: 'Invalid file path'
+        });
+    }
+    
     // Serve floating-photos overlay HTML
-    res.sendFile(path.join(__dirname, '../frontend/client/pages/floating-photos.html'));
+    res.sendFile(overlayPath);
 });
 
 // Route untuk firework overlay: /live/firework/:id
@@ -1502,7 +1681,7 @@ app.get('/live/firework/:id', (req, res) => {
     }
     
     // Serve firework overlay HTML
-    res.sendFile(path.join(__dirname, '../frontend/client/pages/firework.html'));
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/firework/index.html'));
 });
 
 // Route untuk jedagjedug overlay: /live/jedagjedug/:id
@@ -1527,7 +1706,7 @@ app.get('/live/jedagjedug/:id', (req, res) => {
     }
     
     // Serve jedagjedug overlay HTML
-    res.sendFile(path.join(__dirname, '../frontend/client/pages/jedagjedug.html'));
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/jedagjedug/index.html'));
 });
 
 // Route untuk chat overlay: /live/chat/:id
@@ -1552,7 +1731,7 @@ app.get('/live/chat/:id', (req, res) => {
     }
     
     // Serve chat overlay HTML
-    res.sendFile(path.join(__dirname, '../frontend/client/pages/chat.html'));
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/chat/index.html'));
 });
 
 // Route untuk follower alert overlay: /live/follower-alert/:id
@@ -1577,7 +1756,7 @@ app.get('/live/follower-alert/:id', (req, res) => {
     }
     
     // Serve follower alert overlay HTML
-    res.sendFile(path.join(__dirname, '../frontend/client/pages/follower-alert.html'));
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/follower-alert/index.html'));
 });
 
 // Route untuk gift alert overlay: /live/gift-alert/:id
@@ -1602,12 +1781,12 @@ app.get('/live/gift-alert/:id', (req, res) => {
     }
     
     // Serve gift alert overlay HTML
-    res.sendFile(path.join(__dirname, '../frontend/client/pages/gift-alert.html'));
+    res.sendFile(path.join(__dirname, '../frontend/client/pages/gift-alert/index.html'));
 });
 
 // Route dinamis untuk overlay per user: /live/:code
 // HARUS didefinisikan SETELAH route spesifik di atas agar tidak conflict
-app.get('/live/:code', (req, res) => {
+app.get('/live/:code', validateLiveCodeParam, (req, res) => {
     const { code } = req.params;
     const user = getUserByCode(code);
     
@@ -1616,23 +1795,38 @@ app.get('/live/:code', (req, res) => {
     }
     
     if (!user.active) {
+        const escapedCode = escapeHtml(code);
         return res.status(403).send(`
             <html>
-                <head><title>User Inactive</title></head>
+                <head>
+                    <title>User Inactive</title>
+                    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+                </head>
                 <body>
                     <h1>User tidak aktif</h1>
-                    <p>User dengan live code "${code}" tidak aktif.</p>
+                    <p>User dengan live code "${escapedCode}" tidak aktif.</p>
                 </body>
             </html>
         `);
     }
     
+    // Validate path untuk mencegah path traversal
+    const overlayPath = path.join(__dirname, '../frontend/client/pages/overlay/index.html');
+    const allowedBaseDir = path.join(__dirname, '../frontend/client/pages/overlay');
+    
+    if (!validatePath(overlayPath, allowedBaseDir)) {
+        return res.status(500).json({
+            success: false,
+            error: 'Invalid file path'
+        });
+    }
+    
     // Serve overlay HTML dengan parameter code
-    res.sendFile(path.join(__dirname, '../frontend/client/pages/index.html'));
+    res.sendFile(overlayPath);
 });
 
 // Server-Sent Events untuk user tertentu berdasarkan code: /events/code/:code
-app.get('/events/code/:code', (req, res) => {
+app.get('/events/code/:code', sseLimiter, validateLiveCodeParam, (req, res) => {
     const { code } = req.params;
     const user = getUserByCode(code);
     
@@ -1655,7 +1849,7 @@ app.get('/events/code/:code', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering untuk nginx
     
     // Tambahkan client ke Set untuk user ini (menggunakan username sebagai key)
     if (!clientsByUser.has(username)) {
@@ -1667,6 +1861,9 @@ app.get('/events/code/:code', (req, res) => {
     
     // Send initial connection message
     res.write(`data: ${JSON.stringify({ type: 'connected', message: `Connected to webhook server for user: ${username}`, username: username, liveCode: code })}\n\n`);
+    
+    // Send state sync untuk sinkronisasi dengan overlay lain yang sudah terbuka
+    sendStateSync(res, username);
     
     // Handle client disconnect
     req.on('close', () => {
@@ -1684,7 +1881,7 @@ app.get('/events/code/:code', (req, res) => {
 });
 
 // Backward compatibility: /events/:username (masih support untuk compatibility)
-app.get('/events/:username', (req, res) => {
+app.get('/events/:username', sseLimiter, validateUsernameParam, (req, res) => {
     const { username } = req.params;
     const user = getUserByUsername(username);
     
@@ -1698,7 +1895,7 @@ app.get('/events/:username', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering untuk nginx
     
     // Tambahkan client ke Set untuk user ini
     if (!clientsByUser.has(username)) {
@@ -1710,6 +1907,9 @@ app.get('/events/:username', (req, res) => {
     
     // Send initial connection message
     res.write(`data: ${JSON.stringify({ type: 'connected', message: `Connected to webhook server for user: ${username}`, username: username })}\n\n`);
+    
+    // Send state sync untuk sinkronisasi dengan overlay lain yang sudah terbuka
+    sendStateSync(res, username);
     
     // Handle client disconnect
     req.on('close', () => {
@@ -1728,7 +1928,7 @@ app.get('/events/:username', (req, res) => {
 
 // Webhook endpoints dengan support username parameter
 // Format: POST /webhook/:username/follower, /webhook/:username/gift, dll
-app.post('/webhook/:username/follower', (req, res) => {
+app.post('/webhook/:username/follower', webhookLimiter, validateUsernameParam, validateWebhookFollower, (req, res) => {
     const { username: targetUsername } = req.params;
     
     if (!isFeatureEnabled('FOLLOWER_ALERT', true)) {
@@ -1741,29 +1941,22 @@ app.post('/webhook/:username/follower', (req, res) => {
     
     const { username, avatarUrl } = req.body;
     
-    if (!username) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Username is required' 
-        });
-    }
-    
     const event = {
         type: 'follower',
         data: {
-            username: username,
+            username: sanitizeString(username),
             avatarUrl: avatarUrl || null
         }
     };
     
     broadcastToClients(event, targetUsername);
-    console.log(`👋 Follower event for ${targetUsername}: ${username}`);
-    addLog(targetUsername, 'follower', `${username} mengikuti live`, { username, avatarUrl });
+    console.log(`👋 Follower event for ${targetUsername}: ${sanitizeString(username)}`);
+    addLog(targetUsername, 'follower', `${sanitizeString(username)} mengikuti live`, { username: sanitizeString(username), avatarUrl });
     
     res.status(200).json({ success: true, event });
 });
 
-app.post('/webhook/:username/gift', (req, res) => {
+app.post('/webhook/:username/gift', webhookLimiter, validateUsernameParam, validateWebhookGift, (req, res) => {
     const { username: targetUsername } = req.params;
     
     if (!isFeatureEnabled('GIFT_ALERT', true)) {
@@ -1776,18 +1969,11 @@ app.post('/webhook/:username/gift', (req, res) => {
     
     const { username, giftName, quantity, avatarUrl, giftImageUrl } = req.body;
     
-    if (!username || !giftName || !quantity) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Username, giftName, and quantity are required' 
-        });
-    }
-    
     const event = {
         type: 'gift',
         data: {
-            username: username,
-            giftName: giftName,
+            username: sanitizeString(username),
+            giftName: sanitizeString(giftName),
             quantity: parseInt(quantity),
             avatarUrl: avatarUrl || null,
             giftImageUrl: giftImageUrl || null
@@ -1795,13 +1981,13 @@ app.post('/webhook/:username/gift', (req, res) => {
     };
     
     broadcastToClients(event, targetUsername);
-    console.log(`🎁 Gift event for ${targetUsername}: ${username} - ${quantity}x ${giftName}`);
-    addLog(targetUsername, 'gift', `${username} mengirim ${quantity}x ${giftName}`, { username, giftName, quantity, avatarUrl, giftImageUrl });
+    console.log(`🎁 Gift event for ${targetUsername}: ${sanitizeString(username)} - ${quantity}x ${sanitizeString(giftName)}`);
+    addLog(targetUsername, 'gift', `${sanitizeString(username)} mengirim ${quantity}x ${sanitizeString(giftName)}`, { username: sanitizeString(username), giftName: sanitizeString(giftName), quantity, avatarUrl, giftImageUrl });
     
     res.status(200).json({ success: true, event });
 });
 
-app.post('/webhook/:username/chat', (req, res) => {
+app.post('/webhook/:username/chat', webhookLimiter, validateUsernameParam, validateWebhookChat, (req, res) => {
     const { username: targetUsername } = req.params;
     
     if (!isFeatureEnabled('CHAT_OVERLAY', true)) {
@@ -1814,29 +2000,49 @@ app.post('/webhook/:username/chat', (req, res) => {
     
     const { username, message } = req.body;
     
-    if (!username || !message) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Username and message are required' 
-        });
-    }
-    
     const event = {
         type: 'chat',
         data: {
-            username: username,
-            message: message
+            username: sanitizeString(username),
+            message: sanitizeString(message)
         }
     };
     
+    // Update state: tambahkan chat message ke state user
+    const state = getUserState(targetUsername);
+    state.chatMessages.push({
+        username: sanitizeString(username),
+        message: sanitizeString(message),
+        timestamp: Date.now()
+    });
+    // Batasi jumlah chat messages yang disimpan
+    if (state.chatMessages.length > MAX_CHAT_MESSAGES) {
+        state.chatMessages.shift(); // Hapus yang paling lama
+    }
+    state.lastUpdate = Date.now();
+    
     broadcastToClients(event, targetUsername);
-    console.log(`💬 Chat event for ${targetUsername}: ${username}: ${message}`);
-    addLog(targetUsername, 'chat', `${username}: ${message}`, { username, message });
+    console.log(`💬 Chat event for ${targetUsername}: ${sanitizeString(username)}: ${sanitizeString(message)}`);
+    addLog(targetUsername, 'chat', `${sanitizeString(username)}: ${sanitizeString(message)}`, { username: sanitizeString(username), message: sanitizeString(message) });
     
     res.status(200).json({ success: true, event });
 });
 
-app.post('/webhook/:username/viewer', (req, res) => {
+app.post('/webhook/:username/viewer', webhookLimiter, validateUsernameParam, [
+    body('count')
+        .notEmpty()
+        .withMessage('Count wajib diisi')
+        .isInt({ min: 0, max: 100000000 })
+        .withMessage('Count harus berupa angka antara 0-100000000')
+], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            error: errors.array()[0].msg
+        });
+    }
+    
     const { username: targetUsername } = req.params;
     
     if (!isFeatureEnabled('VIEWER_COUNT', true)) {
@@ -1849,19 +2055,17 @@ app.post('/webhook/:username/viewer', (req, res) => {
     
     const { count } = req.body;
     
-    if (count === undefined) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Count is required' 
-        });
-    }
-    
     const event = {
         type: 'viewer',
         data: {
             count: parseInt(count)
         }
     };
+    
+    // Update state: update viewer count
+    const state = getUserState(targetUsername);
+    state.viewerCount = parseInt(count);
+    state.lastUpdate = Date.now();
     
     broadcastToClients(event, targetUsername);
     console.log(`👁️ Viewer count for ${targetUsername}: ${count}`);
@@ -1870,7 +2074,7 @@ app.post('/webhook/:username/viewer', (req, res) => {
     res.status(200).json({ success: true, event });
 });
 
-app.post('/webhook/:username/banner', (req, res) => {
+app.post('/webhook/:username/banner', webhookLimiter, validateUsernameParam, validateWebhookBanner, (req, res) => {
     const { username: targetUsername } = req.params;
     
     if (!isFeatureEnabled('CUSTOM_BANNER', true)) {
@@ -1883,27 +2087,25 @@ app.post('/webhook/:username/banner', (req, res) => {
     
     const { text } = req.body;
     
-    if (!text) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Text is required' 
-        });
-    }
-    
     const event = {
         type: 'banner',
         data: {
-            text: text
+            text: sanitizeString(text)
         }
     };
     
+    // Update state: update banner text
+    const state = getUserState(targetUsername);
+    state.bannerText = sanitizeString(text);
+    state.lastUpdate = Date.now();
+    
     broadcastToClients(event, targetUsername);
-    console.log(`📢 Banner for ${targetUsername}: ${text}`);
+    console.log(`📢 Banner for ${targetUsername}: ${sanitizeString(text)}`);
     
     res.status(200).json({ success: true, event });
 });
 
-app.post('/webhook/:username/floating-photo', (req, res) => {
+app.post('/webhook/:username/floating-photo', webhookLimiter, validateUsernameParam, validateWebhookFloatingPhoto, (req, res) => {
     const { username: targetUsername } = req.params;
     
     if (!isFeatureEnabled('FLOATING_PHOTOS', true)) {
@@ -1916,16 +2118,15 @@ app.post('/webhook/:username/floating-photo', (req, res) => {
     
     const { imageUrl, emoji } = req.body;
     
-    // Tidak perlu validasi strict, biarkan null jika tidak ada
     const event = {
         type: 'floating-photo',
         data: {
             imageUrl: imageUrl || null,
-            emoji: emoji || null
+            emoji: emoji ? sanitizeString(emoji) : null
         }
     };
     
-    console.log(`🖼️ Floating photo event for ${targetUsername}:`, event);
+    console.log(`🖼️ Floating photo event for ${targetUsername}`);
     broadcastToClients(event, targetUsername);
     console.log(`📡 Broadcasted to clients for user: ${targetUsername}`);
     
