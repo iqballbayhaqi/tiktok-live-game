@@ -136,6 +136,8 @@ app.use('/dashboard/components', express.static(path.join(__dirname, '../fronten
 app.use('/css', express.static(path.join(__dirname, '../frontend/client/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/client/js')));
 app.use('/components', express.static(path.join(__dirname, '../frontend/client/components')));
+// Serve static files untuk live-code-not-found
+app.use('/live-code-not-found', express.static(path.join(__dirname, '../frontend/client/pages/live-code-not-found')));
 
 // Serve shared files
 app.use('/shared/js', express.static(path.join(__dirname, '../frontend/shared/js')));
@@ -314,15 +316,18 @@ function getUserByCode(liveCode) {
 // Helper function untuk membuat halaman error "Live code tidak ditemukan"
 function renderLiveCodeNotFoundPage(code) {
     try {
-        const errorPagePath = path.join(__dirname, '../frontend/client/pages/live-code-not-found.html');
+        const errorPagePath = path.join(__dirname, '../frontend/client/pages/live-code-not-found/index.html');
         let html = fs.readFileSync(errorPagePath, 'utf8');
         // Escape HTML untuk mencegah XSS
         const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         // Replace placeholder dengan code yang sudah di-escape
         html = html.replace('{{CODE}}', `"${escapedCode}"`);
+        // Update path CSS dan JS agar relatif terhadap folder live-code-not-found
+        html = html.replace('href="styles.css"', 'href="/live-code-not-found/styles.css"');
+        html = html.replace('src="script.js"', 'src="/live-code-not-found/script.js"');
         return html;
     } catch (error) {
-        console.error('Error loading live-code-not-found.html:', error);
+        console.error('Error loading live-code-not-found/index.html:', error);
         // Fallback jika file tidak ditemukan
         return `<!DOCTYPE html>
 <html lang="id">
@@ -333,7 +338,28 @@ function renderLiveCodeNotFoundPage(code) {
 <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #000; color: #fff;">
     <h1>Live code tidak ditemukan</h1>
     <p>Live code "${code}" tidak ditemukan atau tidak valid.</p>
-    <a href="javascript:history.back()" style="color: #FE2C55;">Kembali</a>
+    <a href="#" id="back-btn" style="color: #FE2C55; text-decoration: none; font-weight: 600;">Kembali</a>
+    <script>
+        (function() {
+            const backBtn = document.getElementById('back-btn');
+            
+            function goBack() {
+                // Cek apakah ada referrer (halaman sebelumnya)
+                if (document.referrer && document.referrer !== window.location.href) {
+                    // Ada halaman sebelumnya, kembali
+                    window.history.back();
+                } else {
+                    // Tidak ada referrer (direct link), redirect ke dashboard
+                    window.location.href = '/control-room';
+                }
+            }
+            
+            backBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                goBack();
+            });
+        })();
+    </script>
 </body>
 </html>`;
     }
