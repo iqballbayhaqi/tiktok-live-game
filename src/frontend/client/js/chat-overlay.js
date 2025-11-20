@@ -304,6 +304,12 @@ function connectWebhookServer() {
         return;
     }
     
+    // Check if socket.io is available
+    if (typeof io === 'undefined') {
+        console.error('❌ Socket.IO client library not loaded');
+        return;
+    }
+    
     // Extract live code atau username dari URL
     const liveCode = window.currentLiveCode || (() => {
         // Pattern: /live/chat/{liveCode}
@@ -332,47 +338,41 @@ function connectWebhookServer() {
         return null;
     })();
     
-    let eventsUrl;
-    if (liveCode) {
-        eventsUrl = `/events/code/${encodeURIComponent(liveCode)}`;
-        console.log(`🔌 Connecting to webhook server for live code: ${liveCode}...`);
-    } else if (username) {
-        eventsUrl = `/events/${encodeURIComponent(username)}`;
-        console.log(`🔌 Connecting to webhook server for user: ${username}...`);
-    } else {
-        eventsUrl = '/events';
-        console.log(`🔌 Connecting to webhook server...`);
+    // Disconnect existing socket if any
+    if (window.currentSocket) {
+        window.currentSocket.disconnect();
     }
     
-    if (window.currentEventSource) {
-        window.currentEventSource.close();
-    }
+    // Connect to Socket.IO server
+    const socket = io();
+    window.currentSocket = socket;
     
-    const eventSource = new EventSource(eventsUrl);
-    window.currentEventSource = eventSource;
-    
-    eventSource.onopen = () => {
+    // Handle connection
+    socket.on('connect', () => {
         if (liveCode) {
-            console.log(`✅ Connected to webhook server for live code: ${liveCode}`);
+            console.log(`🔌 Connecting to webhook server for live code: ${liveCode}...`);
+            socket.emit('join-by-code', { code: liveCode });
         } else if (username) {
-            console.log(`✅ Connected to webhook server for user: ${username}`);
+            console.log(`🔌 Connecting to webhook server for user: ${username}...`);
+            socket.emit('join-by-username', { username: username });
         } else {
-            console.log(`✅ Connected to webhook server`);
+            console.log(`🔌 Connecting to webhook server...`);
+            socket.emit('join');
         }
-    };
+    });
     
-    eventSource.onmessage = (event) => {
+    // Handle events from server
+    socket.on('event', (data) => {
         try {
-            const data = JSON.parse(event.data);
-            console.log('📥 Received SSE event:', data);
+            console.log('📥 Received Socket.IO event:', data);
             
             if (data.type === 'connected') {
                 if (data.liveCode) {
-                    console.log(`📡 Webhook connection established for live code: ${data.liveCode}${data.username ? ` (user: ${data.username})` : ''}`);
+                    console.log(`✅ Connected to webhook server for live code: ${data.liveCode}${data.username ? ` (user: ${data.username})` : ''}`);
                 } else if (data.username) {
-                    console.log(`📡 Webhook connection established for user: ${data.username}`);
+                    console.log(`✅ Connected to webhook server for user: ${data.username}`);
                 } else {
-                    console.log(`📡 Webhook connection established`);
+                    console.log(`✅ Connected to webhook server`);
                 }
                 return;
             }
@@ -417,17 +417,38 @@ function connectWebhookServer() {
         } catch (error) {
             console.error('Error processing webhook event:', error);
         }
-    };
+    });
     
-    eventSource.onerror = (error) => {
-        console.error('❌ Webhook connection error:', error);
-        setTimeout(() => {
-            if (eventSource.readyState === EventSource.CLOSED) {
+    // Handle errors
+    socket.on('error', (error) => {
+        console.error('❌ Socket.IO error:', error);
+    });
+    
+    // Handle disconnect
+    socket.on('disconnect', (reason) => {
+        console.warn(`❌ Webhook connection disconnected: ${reason}`);
+        // Auto-reconnect is handled by socket.io by default
+        if (reason === 'io server disconnect') {
+            // Server disconnected, reconnect manually
+            setTimeout(() => {
                 console.log('🔄 Retrying webhook connection...');
                 connectWebhookServer();
-            }
-        }, 5000);
-    };
+            }, 5000);
+        }
+    });
+    
+    // Handle reconnect
+    socket.on('reconnect', (attemptNumber) => {
+        console.log(`✅ Reconnected to webhook server after ${attemptNumber} attempts`);
+        // Re-join after reconnection
+        if (liveCode) {
+            socket.emit('join-by-code', { code: liveCode });
+        } else if (username) {
+            socket.emit('join-by-username', { username: username });
+        } else {
+            socket.emit('join');
+        }
+    });
 }
 
 // Start initialization

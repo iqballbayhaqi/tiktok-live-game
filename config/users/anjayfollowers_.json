@@ -2,7 +2,7 @@
   "features": {
     "followerAlert": true,
     "giftAlert": true,
-    "chatOverlay": false,
+    "chatOverlay": true,
     "streamTimer": false,
     "viewerCount": false,
     "customBanner": true,
@@ -152,7 +152,7 @@
     "enabled": true,
     "selectionMode": "manual",
     "gifts": [],
-    "coinMin": null,
+    "coinMin": 1,
     "coinMax": null,
     "duration": 19691,
     "volume": 0.7,

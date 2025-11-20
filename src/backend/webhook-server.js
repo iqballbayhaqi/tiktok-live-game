@@ -3,6 +3,8 @@
 require('dotenv').config();
 
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -31,6 +33,13 @@ const {
 } = require('./security-middleware');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+});
 const PORT = process.env.PORT || 3000;
 
 // JSON payload size limit (10MB)
@@ -209,10 +218,10 @@ app.use('/src', express.static(path.join(__dirname, '../')));
 // Serve static files untuk assets (musik, images, dll)
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
 
-// Store connected clients (untuk WebSocket atau Server-Sent Events)
-// Struktur: { username: Set<client> }
-const clientsByUser = new Map();
-const clients = new Set(); // Untuk backward compatibility
+// Store connected socket clients (untuk Socket.IO)
+// Struktur: { username: Set<socketId> }
+const socketsByUser = new Map();
+const allSockets = new Map(); // Map socketId -> { socket, username, liveCode }
 
 // TikTok Live Connector instances per user
 // Struktur: { username: TikTokConnector }
@@ -406,8 +415,8 @@ function getUserState(username) {
     return userState.get(username);
 }
 
-// Helper function untuk mengirim state sync ke client baru
-function sendStateSync(client, username) {
+// Helper function untuk mengirim state sync ke socket
+function sendStateSync(socket, username) {
     const state = getUserState(username);
     const syncEvent = {
         type: 'state-sync',
@@ -419,7 +428,7 @@ function sendStateSync(client, username) {
     };
     
     try {
-        client.write(`data: ${JSON.stringify(syncEvent)}\n\n`);
+        socket.emit('event', syncEvent);
         console.log(`📤 State sync sent to new client for user: ${username}`);
     } catch (error) {
         console.error(`Error sending state sync to client for ${username}:`, error);
@@ -612,49 +621,65 @@ function deleteUser(username) {
     return { success: false, error: 'Failed to delete user' };
 }
 
-// Broadcast function untuk TikTok events
+// Broadcast function untuk TikTok events menggunakan Socket.IO
 function broadcastToClients(event, username = null) {
-    const message = `data: ${JSON.stringify(event)}\n\n`;
-    
     if (username) {
-        // Broadcast ke clients untuk user tertentu
-        const userClients = clientsByUser.get(username);
-        if (userClients) {
-            console.log(`📤 Broadcasting event "${event.type}" to ${userClients.size} client(s) for user: ${username}`);
-            userClients.forEach(client => {
-                try {
-                    client.write(message);
-                } catch (error) {
-                    console.error(`Error broadcasting to client for ${username}:`, error);
-                    userClients.delete(client);
+        // Broadcast ke sockets untuk user tertentu
+        const userSocketIds = socketsByUser.get(username);
+        if (userSocketIds && userSocketIds.size > 0) {
+            console.log(`📤 Broadcasting event "${event.type}" to ${userSocketIds.size} client(s) for user: ${username}`);
+            userSocketIds.forEach(socketId => {
+                const socketData = allSockets.get(socketId);
+                if (socketData && socketData.socket) {
+                    try {
+                        socketData.socket.emit('event', event);
+                    } catch (error) {
+                        console.error(`Error broadcasting to socket ${socketId} for ${username}:`, error);
+                        // Cleanup socket yang error
+                        cleanupSocket(socketId, username);
+                    }
                 }
             });
         } else {
-            console.warn(`⚠️ No clients found for user: ${username}. Available users: ${Array.from(clientsByUser.keys()).join(', ')}`);
+            console.warn(`⚠️ No clients found for user: ${username}. Available users: ${Array.from(socketsByUser.keys()).join(', ')}`);
         }
     } else {
-        // Broadcast ke semua clients (backward compatibility)
-        clients.forEach(client => {
-            try {
-                client.write(message);
-            } catch (error) {
-                console.error('Error broadcasting to client:', error);
-                clients.delete(client);
+        // Broadcast ke semua sockets (backward compatibility)
+        let broadcastCount = 0;
+        allSockets.forEach((socketData, socketId) => {
+            if (socketData && socketData.socket) {
+                try {
+                    socketData.socket.emit('event', event);
+                    broadcastCount++;
+                } catch (error) {
+                    console.error(`Error broadcasting to socket ${socketId}:`, error);
+                    // Cleanup socket yang error
+                    if (socketData.username) {
+                        cleanupSocket(socketId, socketData.username);
+                    }
+                }
             }
         });
-        
-        // Juga broadcast ke semua user-specific clients
-        clientsByUser.forEach((userClients, user) => {
-            userClients.forEach(client => {
-                try {
-                    client.write(message);
-                } catch (error) {
-                    console.error(`Error broadcasting to client for ${user}:`, error);
-                    userClients.delete(client);
-                }
-            });
-        });
+        console.log(`📤 Broadcasting event "${event.type}" to ${broadcastCount} client(s)`);
     }
+}
+
+// Helper function untuk cleanup socket
+function cleanupSocket(socketId, username = null) {
+    const socketData = allSockets.get(socketId);
+    if (socketData) {
+        const targetUsername = username || socketData.username;
+        if (targetUsername) {
+            const userSocketIds = socketsByUser.get(targetUsername);
+            if (userSocketIds) {
+                userSocketIds.delete(socketId);
+                if (userSocketIds.size === 0) {
+                    socketsByUser.delete(targetUsername);
+                }
+            }
+        }
+    }
+    allSockets.delete(socketId);
 }
 
 // Initialize TikTok Connector
@@ -669,10 +694,13 @@ function initTikTokConnector() {
     
     if (tiktokUsername) {
         tiktokConnector = new TikTokConnector(broadcastToClients);
+
+        console.log('TIKTOK_SIGN_API_KEY', process.env.TIKTOK_SIGN_API_KEY);
         
         const options = {
             sessionId: process.env.TIKTOK_SESSION_ID || null,
-            ttTargetIdc: process.env.TIKTOK_TT_TARGET_IDC || null
+            ttTargetIdc: process.env.TIKTOK_TT_TARGET_IDC || null,
+            signApiKey: process.env.TIKTOK_SIGN_API_KEY || null,
         };
         
         tiktokConnector.connect(tiktokUsername, options).catch(err => {
@@ -899,26 +927,102 @@ app.post('/webhook/floating-photo', webhookLimiter, validateWebhookFloatingPhoto
     res.status(200).json({ success: true, event });
 });
 
-// Server-Sent Events untuk real-time updates ke overlay
-app.get('/events', sseLimiter, (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering untuk nginx
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+    console.log(`✅ Socket connected: ${socket.id}`);
     
-    clients.add(res);
+    // Handle join by live code
+    socket.on('join-by-code', (data) => {
+        const { code } = data;
+        if (!code) {
+            socket.emit('error', { message: 'Live code is required' });
+            return;
+        }
+        
+        const user = getUserByCode(code);
+        if (!user) {
+            socket.emit('error', { message: 'Live code not found' });
+            return;
+        }
+        
+        if (!user.active) {
+            socket.emit('error', { message: 'User is not active' });
+            return;
+        }
+        
+        const username = user.username;
+        joinSocketToUser(socket, username, code);
+    });
     
-    console.log(`✅ Client connected. Total clients: ${clients.size}`);
+    // Handle join by username (backward compatibility)
+    socket.on('join-by-username', (data) => {
+        const { username } = data;
+        if (!username) {
+            socket.emit('error', { message: 'Username is required' });
+            return;
+        }
+        
+        const user = getUserByUsername(username);
+        if (!user) {
+            socket.emit('error', { message: 'User not found' });
+            return;
+        }
+        
+        joinSocketToUser(socket, username, null);
+    });
     
-    // Send initial connection message
-    res.write(`data: ${JSON.stringify({ type: 'connected', message: 'Connected to webhook server' })}\n\n`);
+    // Handle generic join (backward compatibility)
+    socket.on('join', () => {
+        // Add to all sockets without specific user
+        allSockets.set(socket.id, { socket, username: null, liveCode: null });
+        socket.emit('event', { 
+            type: 'connected', 
+            message: 'Connected to webhook server' 
+        });
+        console.log(`✅ Socket ${socket.id} joined (generic). Total sockets: ${allSockets.size}`);
+    });
     
-    // Handle client disconnect
-    req.on('close', () => {
-        clients.delete(res);
-        console.log(`❌ Client disconnected. Total clients: ${clients.size}`);
+    // Handle disconnect
+    socket.on('disconnect', () => {
+        const socketData = allSockets.get(socket.id);
+        if (socketData && socketData.username) {
+            cleanupSocket(socket.id, socketData.username);
+            console.log(`❌ Socket ${socket.id} disconnected for user ${socketData.username}`);
+        } else {
+            allSockets.delete(socket.id);
+            console.log(`❌ Socket ${socket.id} disconnected. Total sockets: ${allSockets.size}`);
+        }
     });
 });
+
+// Helper function untuk join socket ke user
+function joinSocketToUser(socket, username, liveCode) {
+    // Remove dari semua tempat sebelumnya
+    cleanupSocket(socket.id, null);
+    
+    // Add ke user-specific sockets
+    if (!socketsByUser.has(username)) {
+        socketsByUser.set(username, new Set());
+    }
+    socketsByUser.get(username).add(socket.id);
+    
+    // Add ke allSockets
+    allSockets.set(socket.id, { socket, username, liveCode });
+    
+    // Send connection confirmation
+    socket.emit('event', {
+        type: 'connected',
+        message: `Connected to webhook server for user: ${username}`,
+        username: username,
+        liveCode: liveCode
+    });
+    
+    // Send state sync
+    sendStateSync(socket, username);
+    
+    const userSocketIds = socketsByUser.get(username);
+    console.log(`✅ Socket ${socket.id} joined for user ${username}${liveCode ? ` (code: ${liveCode})` : ''}. Total sockets for this user: ${userSocketIds ? userSocketIds.size : 0}`);
+}
 
 // TikTok Live Connector Endpoints (per user)
 app.post('/api/users/:username/tiktok/connect', async (req, res) => {
@@ -1826,104 +1930,30 @@ app.get('/live/:code', validateLiveCodeParam, (req, res) => {
     res.sendFile(overlayPath);
 });
 
-// Server-Sent Events untuk user tertentu berdasarkan code: /events/code/:code
-app.get('/events/code/:code', sseLimiter, validateLiveCodeParam, (req, res) => {
-    const { code } = req.params;
-    const user = getUserByCode(code);
-    
-    if (!user) {
-        return res.status(404).json({ 
-            success: false, 
-            error: 'Live code not found' 
-        });
-    }
-    
-    if (!user.active) {
-        return res.status(403).json({ 
-            success: false, 
-            error: 'User is not active' 
-        });
-    }
-    
-    const username = user.username;
-    
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering untuk nginx
-    
-    // Tambahkan client ke Set untuk user ini (menggunakan username sebagai key)
-    if (!clientsByUser.has(username)) {
-        clientsByUser.set(username, new Set());
-    }
-    clientsByUser.get(username).add(res);
-    
-    console.log(`✅ Client connected for user ${username} (code: ${code}). Total clients for this user: ${clientsByUser.get(username).size}`);
-    
-    // Send initial connection message
-    res.write(`data: ${JSON.stringify({ type: 'connected', message: `Connected to webhook server for user: ${username}`, username: username, liveCode: code })}\n\n`);
-    
-    // Send state sync untuk sinkronisasi dengan overlay lain yang sudah terbuka
-    sendStateSync(res, username);
-    
-    // Handle client disconnect
-    req.on('close', () => {
-        const userClients = clientsByUser.get(username);
-        if (userClients) {
-            userClients.delete(res);
-            console.log(`❌ Client disconnected for user ${username} (code: ${code}). Total clients for this user: ${userClients.size}`);
-            
-            // Hapus Set jika kosong
-            if (userClients.size === 0) {
-                clientsByUser.delete(username);
-            }
-        }
+// Endpoint untuk backward compatibility dengan SSE (redirect ke socket.io info)
+app.get('/events', (req, res) => {
+    res.status(200).json({
+        success: false,
+        message: 'SSE endpoint deprecated. Please use Socket.IO instead.',
+        socketIoUrl: '/socket.io/'
     });
 });
 
-// Backward compatibility: /events/:username (masih support untuk compatibility)
-app.get('/events/:username', sseLimiter, validateUsernameParam, (req, res) => {
-    const { username } = req.params;
-    const user = getUserByUsername(username);
-    
-    if (!user) {
-        return res.status(404).json({ 
-            success: false, 
-            error: 'User not found' 
-        });
-    }
-    
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering untuk nginx
-    
-    // Tambahkan client ke Set untuk user ini
-    if (!clientsByUser.has(username)) {
-        clientsByUser.set(username, new Set());
-    }
-    clientsByUser.get(username).add(res);
-    
-    console.log(`✅ Client connected for user ${username}. Total clients for this user: ${clientsByUser.get(username).size}`);
-    
-    // Send initial connection message
-    res.write(`data: ${JSON.stringify({ type: 'connected', message: `Connected to webhook server for user: ${username}`, username: username })}\n\n`);
-    
-    // Send state sync untuk sinkronisasi dengan overlay lain yang sudah terbuka
-    sendStateSync(res, username);
-    
-    // Handle client disconnect
-    req.on('close', () => {
-        const userClients = clientsByUser.get(username);
-        if (userClients) {
-            userClients.delete(res);
-            console.log(`❌ Client disconnected for user ${username}. Total clients for this user: ${userClients.size}`);
-            
-            // Hapus Set jika kosong
-            if (userClients.size === 0) {
-                clientsByUser.delete(username);
-            }
-        }
+app.get('/events/code/:code', (req, res) => {
+    res.status(200).json({
+        success: false,
+        message: 'SSE endpoint deprecated. Please use Socket.IO instead.',
+        socketIoUrl: '/socket.io/',
+        instructions: 'Connect to Socket.IO and emit "join-by-code" event with { code: "' + req.params.code + '" }'
+    });
+});
+
+app.get('/events/:username', (req, res) => {
+    res.status(200).json({
+        success: false,
+        message: 'SSE endpoint deprecated. Please use Socket.IO instead.',
+        socketIoUrl: '/socket.io/',
+        instructions: 'Connect to Socket.IO and emit "join-by-username" event with { username: "' + req.params.username + '" }'
     });
 });
 
@@ -2197,7 +2227,11 @@ app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
-        connectedClients: clients.size
+        connectedClients: allSockets.size,
+        connectedUsers: Array.from(socketsByUser.keys()).map(username => ({
+            username,
+            socketCount: socketsByUser.get(username).size
+        }))
     });
 });
 
@@ -2247,8 +2281,8 @@ app.get('/test', (req, res) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server dengan Socket.IO
+server.listen(PORT, () => {
     console.log(`🚀 Webhook server running on http://localhost:${PORT}`);
     console.log(`📡 Webhook endpoints available at http://localhost:${PORT}/webhook/*`);
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
