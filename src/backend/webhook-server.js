@@ -311,6 +311,34 @@ function getUserByCode(liveCode) {
     return usersData.users.find(u => u.liveCode === liveCode);
 }
 
+// Helper function untuk membuat halaman error "Live code tidak ditemukan"
+function renderLiveCodeNotFoundPage(code) {
+    try {
+        const errorPagePath = path.join(__dirname, '../frontend/client/pages/live-code-not-found.html');
+        let html = fs.readFileSync(errorPagePath, 'utf8');
+        // Escape HTML untuk mencegah XSS
+        const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        // Replace placeholder dengan code yang sudah di-escape
+        html = html.replace('{{CODE}}', `"${escapedCode}"`);
+        return html;
+    } catch (error) {
+        console.error('Error loading live-code-not-found.html:', error);
+        // Fallback jika file tidak ditemukan
+        return `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Code Tidak Ditemukan</title>
+</head>
+<body style="font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #000; color: #fff;">
+    <h1>Live code tidak ditemukan</h1>
+    <p>Live code "${code}" tidak ditemukan atau tidak valid.</p>
+    <a href="javascript:history.back()" style="color: #FE2C55;">Kembali</a>
+</body>
+</html>`;
+    }
+}
+
 function createUser(username, displayName = null, liveCode = null) {
     // Validate username format
     if (!username || typeof username !== 'string') {
@@ -1407,16 +1435,7 @@ app.get('/live/floating-photos/:id', (req, res) => {
     const user = getUserByCode(id);
     
     if (!user) {
-        return res.status(404).send(`
-            <html>
-                <head><title>Live Code Not Found</title></head>
-                <body>
-                    <h1>Live code tidak ditemukan</h1>
-                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
-                    <p><a href="/api/users">Lihat daftar users</a></p>
-                </body>
-            </html>
-        `);
+        return res.status(404).send(renderLiveCodeNotFoundPage(id));
     }
     
     if (!user.active) {
@@ -1441,16 +1460,7 @@ app.get('/live/firework/:id', (req, res) => {
     const user = getUserByCode(id);
     
     if (!user) {
-        return res.status(404).send(`
-            <html>
-                <head><title>Live Code Not Found</title></head>
-                <body>
-                    <h1>Live code tidak ditemukan</h1>
-                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
-                    <p><a href="/api/users">Lihat daftar users</a></p>
-                </body>
-            </html>
-        `);
+        return res.status(404).send(renderLiveCodeNotFoundPage(id));
     }
     
     if (!user.active) {
@@ -1475,16 +1485,7 @@ app.get('/live/jedagjedug/:id', (req, res) => {
     const user = getUserByCode(id);
     
     if (!user) {
-        return res.status(404).send(`
-            <html>
-                <head><title>Live Code Not Found</title></head>
-                <body>
-                    <h1>Live code tidak ditemukan</h1>
-                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
-                    <p><a href="/api/users">Lihat daftar users</a></p>
-                </body>
-            </html>
-        `);
+        return res.status(404).send(renderLiveCodeNotFoundPage(id));
     }
     
     if (!user.active) {
@@ -1509,16 +1510,7 @@ app.get('/live/chat/:id', (req, res) => {
     const user = getUserByCode(id);
     
     if (!user) {
-        return res.status(404).send(`
-            <html>
-                <head><title>Live Code Not Found</title></head>
-                <body>
-                    <h1>Live code tidak ditemukan</h1>
-                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
-                    <p><a href="/api/users">Lihat daftar users</a></p>
-                </body>
-            </html>
-        `);
+        return res.status(404).send(renderLiveCodeNotFoundPage(id));
     }
     
     if (!user.active) {
@@ -1543,16 +1535,7 @@ app.get('/live/follower-alert/:id', (req, res) => {
     const user = getUserByCode(id);
     
     if (!user) {
-        return res.status(404).send(`
-            <html>
-                <head><title>Live Code Not Found</title></head>
-                <body>
-                    <h1>Live code tidak ditemukan</h1>
-                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
-                    <p><a href="/api/users">Lihat daftar users</a></p>
-                </body>
-            </html>
-        `);
+        return res.status(404).send(renderLiveCodeNotFoundPage(id));
     }
     
     if (!user.active) {
@@ -1577,16 +1560,7 @@ app.get('/live/gift-alert/:id', (req, res) => {
     const user = getUserByCode(id);
     
     if (!user) {
-        return res.status(404).send(`
-            <html>
-                <head><title>Live Code Not Found</title></head>
-                <body>
-                    <h1>Live code tidak ditemukan</h1>
-                    <p>Live code "${id}" tidak ditemukan atau tidak valid.</p>
-                    <p><a href="/api/users">Lihat daftar users</a></p>
-                </body>
-            </html>
-        `);
+        return res.status(404).send(renderLiveCodeNotFoundPage(id));
     }
     
     if (!user.active) {
@@ -1612,16 +1586,7 @@ app.get('/live/:code', (req, res) => {
     const user = getUserByCode(code);
     
     if (!user) {
-        return res.status(404).send(`
-            <html>
-                <head><title>Live Code Not Found</title></head>
-                <body>
-                    <h1>Live code tidak ditemukan</h1>
-                    <p>Live code "${code}" tidak ditemukan atau tidak valid.</p>
-                    <p><a href="/api/users">Lihat daftar users</a></p>
-                </body>
-            </html>
-        `);
+        return res.status(404).send(renderLiveCodeNotFoundPage(code));
     }
     
     if (!user.active) {
