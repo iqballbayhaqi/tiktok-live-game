@@ -17,6 +17,12 @@ class ChatOverlayManager {
     }
 
     async init() {
+        // Add class to body based on pathname for specific styling
+        const pathname = window.location.pathname;
+        if (pathname.match(/^\/live\/chat\//)) {
+            document.body.classList.add('live-chat-overlay');
+        }
+
         // Load ChatOverlay component
         await ComponentLoader.loadComponents([
             { name: 'ChatOverlay', target: '#chat-overlay-container' }

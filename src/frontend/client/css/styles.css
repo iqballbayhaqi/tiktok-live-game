@@ -106,21 +106,43 @@ body {
     50% { transform: translateY(-10px); }
 }
 
-/* Chat Overlay Styles */
-.chat-overlay {
+/* Chat Overlay Container - Full Size */
+#chat-overlay-container {
     position: absolute;
-    bottom: clamp(10px, 3vw, 50px);
-    left: clamp(10px, 3vw, 50px);
-    width: clamp(280px, 30vw, 500px);
-    max-width: calc(100vw - 20px);
-    max-height: clamp(200px, 40vh, 400px);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 900;
+}
+
+/* Khusus untuk path /live/chat/:code - width 100% */
+body.live-chat-overlay #chat-overlay-container {
+    width: 100% !important;
+}
+
+body.live-chat-overlay #chat-overlay-container .chat-overlay {
+    width: 100% !important;
+}
+
+/* Chat Overlay Styles - Full Size */
+#chat-overlay-container .chat-overlay {
+    position: relative;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.7);
     border-radius: clamp(10px, 1.5vw, 15px);
     backdrop-filter: blur(10px);
     border: 2px solid rgba(255, 255, 255, 0.1);
     overflow: hidden;
-    z-index: 900;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    max-width: none !important;
+    max-height: none !important;
 }
 
 .chat-header {
@@ -133,6 +155,7 @@ body {
     font-weight: 600;
     flex-wrap: wrap;
     gap: 8px;
+    flex-shrink: 0;
 }
 
 .chat-title {
@@ -153,12 +176,19 @@ body {
 
 .chat-messages {
     padding: clamp(10px, 1.5vw, 15px);
-    max-height: calc(clamp(200px, 40vh, 400px) - clamp(50px, 8vh, 70px));
+    flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: clamp(6px, 1vw, 10px);
     box-sizing: border-box;
+    min-height: 0;
+}
+
+/* Ensure chat messages in full-size container also use flex */
+#chat-overlay-container .chat-messages {
+    flex: 1 !important;
+    max-height: none !important;
 }
 
 .chat-message {
@@ -550,6 +580,19 @@ body {
         border-radius: 12px;
     }
 
+    /* Override untuk path /live/chat/:code - tetap width 100% */
+    body.live-chat-overlay #chat-overlay-container {
+        width: 100% !important;
+    }
+
+    body.live-chat-overlay #chat-overlay-container .chat-overlay {
+        width: 100% !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        max-width: none !important;
+    }
+
     .chat-header {
         padding: 10px 15px;
         flex-wrap: wrap;
@@ -656,6 +699,18 @@ body {
         max-height: min(350px, 45vh);
     }
 
+    /* Override untuk path /live/chat/:code - tetap width 100% */
+    body.live-chat-overlay #chat-overlay-container {
+        width: 100% !important;
+    }
+
+    body.live-chat-overlay #chat-overlay-container .chat-overlay {
+        width: 100% !important;
+        bottom: auto !important;
+        left: auto !important;
+        max-width: none !important;
+    }
+
     .chat-header {
         padding: 12px 18px;
     }
@@ -725,6 +780,19 @@ body {
         right: 8px !important;
         max-height: min(180px, 30vh) !important;
         border-radius: 10px;
+    }
+
+    /* Override untuk path /live/chat/:code - tetap width 100% */
+    body.live-chat-overlay #chat-overlay-container {
+        width: 100% !important;
+    }
+
+    body.live-chat-overlay #chat-overlay-container .chat-overlay {
+        width: 100% !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        max-width: none !important;
     }
 
     .chat-header {

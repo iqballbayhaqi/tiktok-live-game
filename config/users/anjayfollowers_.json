@@ -128,8 +128,8 @@
     "triggers": {
       "chat": true,
       "chatScale": 1,
-      "follow": false,
-      "followScale": 1,
+      "follow": true,
+      "followScale": 1.5,
       "share": false,
       "shareScale": 1,
       "gift": false,
