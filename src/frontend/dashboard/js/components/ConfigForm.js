@@ -46,9 +46,9 @@ class ConfigForm {
                 setTimeout(async () => {
                     await this.populateMusicSelect();
                     // Jika ada config yang sudah dimuat, set nilai select musik
-                    if (this.currentConfig && this.currentConfig.giftJedagJedug?.musicPath) {
-                        const musicSelect = document.getElementById('giftJedagJedugMusicPath');
-                        if (musicSelect) {
+                    const musicSelect = document.getElementById('giftJedagJedugMusicPath');
+                    if (musicSelect) {
+                        if (this.currentConfig && this.currentConfig.giftJedagJedug?.musicPath) {
                             // Check if the value exists in options, if not add it
                             const optionExists = Array.from(musicSelect.options).some(opt => opt.value === this.currentConfig.giftJedagJedug.musicPath);
                             if (!optionExists && this.currentConfig.giftJedagJedug.musicPath) {
@@ -59,6 +59,12 @@ class ConfigForm {
                                 musicSelect.appendChild(option);
                             }
                             musicSelect.value = this.currentConfig.giftJedagJedug.musicPath;
+                        } else {
+                            // Jika tidak ada config, set default ke index 0 (sudah di-handle di populateMusicSelect)
+                            // Tapi pastikan value ter-set jika belum ter-set
+                            if (!musicSelect.value && this.musicData.length > 0) {
+                                musicSelect.value = this.musicData[0].path;
+                            }
                         }
                     }
                 }, 100);
@@ -72,33 +78,63 @@ class ConfigForm {
 
     async populateMusicSelect() {
         const musicSelect = document.getElementById('giftJedagJedugMusicPath');
-        if (!musicSelect || !this.musicData || this.musicData.length === 0) {
-            return;
+        if (!musicSelect) {
+            return Promise.resolve();
         }
 
-        // Clear existing options (keep first empty option if exists)
-        const firstOption = musicSelect.options[0];
+        // Clear existing options
         musicSelect.innerHTML = '';
-        if (firstOption && firstOption.value === '') {
-            musicSelect.appendChild(firstOption);
+
+        // If no music data, return early
+        if (!this.musicData || this.musicData.length === 0) {
+            return Promise.resolve();
         }
 
-        // Add music options
+        // Get current value before populating (if any)
+        const currentValue = musicSelect.value;
+
+        // Add music options first (without duration for faster rendering)
+        const musicOptions = [];
         for (const music of this.musicData) {
             const option = document.createElement('option');
             option.value = music.path;
-            
-            // Try to detect duration from audio file
-            const duration = await this.getAudioDuration(music.path);
-            if (duration) {
-                option.setAttribute('data-duration', duration);
-                option.textContent = `${music.filename} (${duration}ms)`;
-            } else {
-                option.textContent = music.filename;
-            }
-            
+            option.textContent = music.filename;
             musicSelect.appendChild(option);
+            musicOptions.push({ option, path: music.path, filename: music.filename });
         }
+
+        // Set default to first music (index 0) if no current value or current value is empty
+        if (!currentValue || currentValue === '') {
+            if (this.musicData.length > 0) {
+                musicSelect.value = this.musicData[0].path;
+            }
+        } else {
+            // Restore previous value if it exists
+            musicSelect.value = currentValue;
+        }
+
+        // Update options with duration asynchronously (non-blocking)
+        // This allows the select to be usable immediately while durations load in background
+        Promise.all(
+            musicOptions.map(async ({ option, path, filename }) => {
+                try {
+                    const duration = await this.getAudioDuration(path);
+                    if (duration) {
+                        option.setAttribute('data-duration', duration);
+                        option.textContent = `${filename} (${duration}ms)`;
+                    }
+                } catch (error) {
+                    // Keep original filename if duration detection fails
+                    console.warn(`Failed to get duration for ${filename}:`, error);
+                }
+            })
+        ).catch(error => {
+            console.warn('Error loading music durations:', error);
+        });
+
+        // Return resolved promise immediately after options are added
+        // (don't wait for duration detection to complete)
+        return Promise.resolve();
     }
 
     async getAudioDuration(audioPath) {
@@ -465,13 +501,17 @@ class ConfigForm {
         if (this.musicData && this.musicData.length > 0) {
             // Populate music select first, then set value
             this.populateMusicSelect().then(() => {
-                this.setNestedValue('giftJedagJedug.musicPath', config.giftJedagJedug?.musicPath);
+                // Jika ada musicPath di config, gunakan itu, jika tidak gunakan default index 0
+                const musicPath = config.giftJedagJedug?.musicPath || (this.musicData.length > 0 ? this.musicData[0].path : '');
+                this.setNestedValue('giftJedagJedug.musicPath', musicPath);
             }).catch(() => {
                 // Fallback: try to set value anyway
-                this.setNestedValue('giftJedagJedug.musicPath', config.giftJedagJedug?.musicPath);
+                const musicPath = config.giftJedagJedug?.musicPath || (this.musicData.length > 0 ? this.musicData[0].path : '');
+                this.setNestedValue('giftJedagJedug.musicPath', musicPath);
             });
         } else {
             // If music data not loaded yet, try to set value anyway (might be custom path)
+            // Jika tidak ada musicPath di config, akan di-set nanti saat musicData sudah dimuat
             this.setNestedValue('giftJedagJedug.musicPath', config.giftJedagJedug?.musicPath);
         }
         

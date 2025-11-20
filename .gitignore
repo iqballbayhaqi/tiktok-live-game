@@ -19,6 +19,7 @@ npm-debug.log*
 
 # Config files dengan sensitive data
 config.local.js
+config/users/
 .env
 .env.local
 .env.*

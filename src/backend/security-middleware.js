@@ -25,7 +25,7 @@ const securityHeaders = helmet({
 // Rate limiting untuk API endpoints
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 menit
-    max: 100, // Maksimal 100 requests per IP per window
+    max: 500, // Maksimal 500 requests per IP per window (dinaikkan dari 100)
     message: {
         success: false,
         error: 'Terlalu banyak request dari IP ini, coba lagi dalam beberapa menit.'
@@ -41,7 +41,7 @@ const apiLimiter = rateLimit({
 // Rate limiting untuk webhook endpoints (lebih longgar)
 const webhookLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 menit
-    max: 60, // Maksimal 60 requests per IP per menit
+    max: 300, // Maksimal 300 requests per IP per menit (dinaikkan dari 60)
     message: {
         success: false,
         error: 'Terlalu banyak webhook request, coba lagi dalam beberapa saat.'
@@ -53,7 +53,7 @@ const webhookLimiter = rateLimit({
 // Rate limiting untuk user management endpoints (lebih ketat)
 const userManagementLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 menit
-    max: 20, // Maksimal 20 requests per IP per window
+    max: 100, // Maksimal 100 requests per IP per window (dinaikkan dari 20)
     message: {
         success: false,
         error: 'Terlalu banyak request untuk user management, coba lagi dalam beberapa menit.'
@@ -65,7 +65,7 @@ const userManagementLimiter = rateLimit({
 // Rate limiting untuk SSE connections (lebih longgar)
 const sseLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 menit
-    max: 10, // Maksimal 10 connections per IP per menit
+    max: 50, // Maksimal 50 connections per IP per menit (dinaikkan dari 10)
     message: {
         success: false,
         error: 'Terlalu banyak koneksi SSE, coba lagi dalam beberapa saat.'
@@ -169,6 +169,27 @@ const validateUsernameParam = [
 // Validation middleware untuk live code parameter
 const validateLiveCodeParam = [
     param('code')
+        .notEmpty()
+        .withMessage('Live code tidak boleh kosong')
+        .isLength({ min: 8, max: 50 })
+        .withMessage('Live code harus antara 8-50 karakter')
+        .matches(/^[a-zA-Z0-9]+$/)
+        .withMessage('Live code hanya boleh mengandung huruf dan angka'),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                error: errors.array()[0].msg
+            });
+        }
+        next();
+    }
+];
+
+// Validation middleware untuk live code parameter dengan nama 'id'
+const validateLiveCodeIdParam = [
+    param('id')
         .notEmpty()
         .withMessage('Live code tidak boleh kosong')
         .isLength({ min: 8, max: 50 })
@@ -376,6 +397,7 @@ module.exports = {
     sseLimiter,
     sanitizeString,
     escapeHtml,
+    validateLiveCodeIdParam,
     sanitizeUsername,
     validatePath,
     validateUsernameParam,

@@ -21,6 +21,7 @@ const {
     validatePath,
     validateUsernameParam,
     validateLiveCodeParam,
+    validateLiveCodeIdParam,
     validateCreateUser,
     validateWebhookFollower,
     validateWebhookGift,
@@ -1620,7 +1621,7 @@ app.delete('/api/users/:username/logs', userManagementLimiter, validateUsernameP
 // Urutan: /live/floating-photos/:id, /live/firework/:id, /live/jedagjedug/:id, /live/chat/:id, /live/follower-alert/:id, /live/gift-alert/:id, kemudian /live/:code
 
 // Route untuk floating-photos overlay: /live/floating-photos/:id
-app.get('/live/floating-photos/:id', validateLiveCodeParam, (req, res) => {
+app.get('/live/floating-photos/:id', validateLiveCodeIdParam, (req, res) => {
     const { id } = req.params;
     const user = getUserByCode(id);
     

@@ -9,6 +9,7 @@ class JedagJedug {
         this.queue = []; // Queue untuk efek jedag jedug
         this.isShowing = false; // Flag untuk menandai apakah sedang menampilkan efek
         this.currentTimeout = null; // Timeout untuk auto stop
+        this.audioUnlocked = false; // Flag untuk track apakah audio sudah di-unlock oleh user interaction
         
         // Konfigurasi jedag jedug
         this.jedagJedugConfig = config.jedagJedug || {};
@@ -30,6 +31,7 @@ class JedagJedug {
         this.discoStrobeSpeed = this.discoConfig.strobeSpeed !== undefined ? this.discoConfig.strobeSpeed : 80;
         
         this.initAudio();
+        this.setupAudioUnlock();
     }
 
     initAudio() {
@@ -46,6 +48,70 @@ class JedagJedug {
             this.audioElement.appendChild(source);
             
             document.body.appendChild(this.audioElement);
+        }
+    }
+
+    setupAudioUnlock() {
+        // Coba unlock audio context secara proaktif saat inisialisasi
+        this.attemptAudioUnlock();
+        
+        // Juga setup event listeners sebagai fallback
+        const unlockAudio = async () => {
+            if (this.audioUnlocked) return;
+            await this.attemptAudioUnlock();
+        };
+        
+        // Tambahkan event listeners untuk user interaction (sebagai fallback)
+        document.addEventListener('click', unlockAudio, { once: true, passive: true });
+        document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+        document.addEventListener('keydown', unlockAudio, { once: true, passive: true });
+    }
+
+    async attemptAudioUnlock() {
+        if (this.audioUnlocked) return true;
+        
+        if (!this.audioElement) {
+            this.initAudio();
+        }
+        
+        try {
+            // Teknik 1: Set muted terlebih dahulu, lalu unmute setelah play
+            // Beberapa browser mengizinkan muted autoplay
+            this.audioElement.muted = true;
+            this.audioElement.volume = 0;
+            
+            // Coba play dengan muted
+            const playPromise = this.audioElement.play();
+            
+            if (playPromise !== undefined) {
+                await playPromise;
+                // Setelah berhasil play, unmute dan set volume
+                this.audioElement.muted = false;
+                this.audioElement.volume = this.jedagJedugConfig.volume || 0.7;
+                this.audioElement.pause();
+                this.audioElement.currentTime = 0;
+                this.audioUnlocked = true;
+                console.log('✅ Audio context unlocked successfully');
+                return true;
+            }
+        } catch (error) {
+            // Jika muted play gagal, coba teknik lain
+            try {
+                // Teknik 2: Coba play langsung tanpa muted
+                this.audioElement.muted = false;
+                this.audioElement.volume = this.jedagJedugConfig.volume || 0.7;
+                await this.audioElement.play();
+                this.audioElement.pause();
+                this.audioElement.currentTime = 0;
+                this.audioUnlocked = true;
+                console.log('✅ Audio context unlocked successfully (direct play)');
+                return true;
+            } catch (error2) {
+                // Jika masih gagal, audio belum bisa di-unlock tanpa user interaction
+                // Akan dicoba lagi saat user interaction atau saat playMusic dipanggil
+                console.warn('⚠️ Audio unlock failed, will retry on user interaction:', error2.name);
+                return false;
+            }
         }
     }
 
@@ -214,7 +280,7 @@ class JedagJedug {
         animate();
     }
 
-    playMusic(duration) {
+    async playMusic(duration) {
         if (!this.audioElement) {
             this.initAudio();
         }
@@ -223,16 +289,52 @@ class JedagJedug {
             // Reset audio ke awal
             this.audioElement.currentTime = 0;
             
-            // Play musik
-            const playPromise = this.audioElement.play();
+            // Pastikan volume dan muted state sudah benar
+            this.audioElement.volume = this.jedagJedugConfig.volume || 0.7;
+            this.audioElement.muted = false;
             
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    // Musik berhasil diputar
-                    console.log('🎵 Jedag jedug music started');
-                }).catch(error => {
-                    console.warn('⚠️ Failed to play jedag jedug music:', error);
-                });
+            // Jika audio belum di-unlock, coba unlock dulu dengan teknik muted
+            if (!this.audioUnlocked) {
+                const unlocked = await this.attemptAudioUnlock();
+                if (!unlocked) {
+                    // Jika unlock gagal, coba play dengan muted terlebih dahulu
+                    // Beberapa browser mengizinkan muted autoplay
+                    try {
+                        this.audioElement.muted = true;
+                        await this.audioElement.play();
+                        // Setelah berhasil play, unmute
+                        this.audioElement.muted = false;
+                        this.audioUnlocked = true;
+                        console.log('🎵 Jedag jedug music started (unlocked via muted play)');
+                    } catch (mutedError) {
+                        // Jika masih gagal, efek visual tetap berjalan
+                        console.warn('⚠️ Audio belum bisa diputar. Efek visual tetap berjalan.');
+                        return;
+                    }
+                }
+            }
+            
+            // Play musik
+            try {
+                await this.audioElement.play();
+                console.log('🎵 Jedag jedug music started');
+            } catch (playError) {
+                // Jika masih gagal, coba dengan muted terlebih dahulu
+                if (playError.name === 'NotAllowedError') {
+                    try {
+                        this.audioElement.muted = true;
+                        await this.audioElement.play();
+                        this.audioElement.muted = false;
+                        this.audioUnlocked = true;
+                        console.log('🎵 Jedag jedug music started (via muted fallback)');
+                    } catch (mutedError) {
+                        console.warn('⚠️ Failed to play jedag jedug music:', mutedError);
+                        return;
+                    }
+                } else {
+                    console.warn('⚠️ Failed to play jedag jedug music:', playError);
+                    return;
+                }
             }
 
             // Auto stop setelah durasi

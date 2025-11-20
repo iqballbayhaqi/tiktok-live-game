@@ -154,11 +154,11 @@
     "gifts": [],
     "coinMin": null,
     "coinMax": null,
-    "duration": 5000,
+    "duration": 19691,
     "volume": 0.7,
     "centerX": null,
     "centerY": null,
-    "musicPath": "/assets/music/jedag-jedug.mp3",
+    "musicPath": "/assets/music/jedag-jedug2.mp3",
     "disco": {
       "enabled": false
     }
