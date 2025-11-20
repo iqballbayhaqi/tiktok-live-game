@@ -20,7 +20,10 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
+          set -e
+          set -o pipefail
           cd /root/tiktok-live-game   # ubah sesuai directory project
-          git pull origin main
-          npm install
-          pm2 restart all
+          git fetch origin main || exit 1
+          git reset --hard origin/main || exit 1
+          npm install || exit 1
+          pm2 restart all || exit 1
