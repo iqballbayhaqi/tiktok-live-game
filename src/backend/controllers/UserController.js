@@ -127,6 +127,10 @@ class UserController {
             }
             
             const config = ConfigModel.loadUserConfig(username);
+            // Set headers untuk mencegah caching di browser
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
             res.status(200).json({ success: true, config });
         } catch (error) {
             console.error('Error loading user config:', error);
@@ -160,7 +164,8 @@ class UserController {
                 });
             }
             
-            // Broadcast config update ke semua clients user
+            // Broadcast config update ke semua clients user (jika ada client aktif)
+            // Catatan: Broadcast tidak mempengaruhi hasil save, JSON sudah tersimpan
             EventService.broadcastToClients({
                 type: 'config-updated',
                 data: { config }

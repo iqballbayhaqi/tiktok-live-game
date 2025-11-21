@@ -49,11 +49,11 @@
       "text": "#000000"
     },
     "floatingPhotos": {
-      "randomColor": false,
-      "maxPhotos": 100,
+      "randomColor": true,
+      "maxPhotos": 500,
       "scale": 1,
       "triggers": {
-        "chat": false,
+        "chat": true,
         "chatScale": 1,
         "follow": false,
         "followScale": 1,

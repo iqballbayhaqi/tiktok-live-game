@@ -220,7 +220,13 @@ async function loadConfig() {
     
     try {
         Notification.info('Memuat konfigurasi...');
-        const response = await fetch(`/api/users/${encodeURIComponent(username)}/config`);
+        // Tambahkan cache-busting parameter untuk memastikan selalu mengambil data terbaru
+        const response = await fetch(`/api/users/${encodeURIComponent(username)}/config?t=${Date.now()}`, {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
         const data = await response.json();
 
         if (data.success) {

@@ -95,7 +95,10 @@ class ConfigModel {
             const configPath = UserModel.getUserConfigPath(username);
             if (fs.existsSync(configPath)) {
                 const data = fs.readFileSync(configPath, 'utf8');
-                return JSON.parse(data);
+                const parsed = JSON.parse(data);
+                // Jika file memiliki wrapper "config", ekstrak config.config
+                // Jika tidak, gunakan langsung
+                return parsed.config || parsed;
             }
             // Jika tidak ada config per user, gunakan default config
             return this.defaultConfig;
@@ -113,7 +116,9 @@ class ConfigModel {
             if (!fs.existsSync(usersDir)) {
                 fs.mkdirSync(usersDir, { recursive: true });
             }
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+            // Simpan dengan wrapper "config" untuk konsistensi dengan format file yang sudah ada
+            const dataToSave = { config: config };
+            fs.writeFileSync(configPath, JSON.stringify(dataToSave, null, 2), 'utf8');
             return true;
         } catch (error) {
             console.error(`Error saving config for user ${username}:`, error);

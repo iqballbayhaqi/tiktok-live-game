@@ -372,7 +372,10 @@ function loadUserConfig(username) {
         const configPath = getUserConfigPath(username);
         if (fs.existsSync(configPath)) {
             const data = fs.readFileSync(configPath, 'utf8');
-            return JSON.parse(data);
+            const parsed = JSON.parse(data);
+            // Jika file memiliki wrapper "config", ekstrak config.config
+            // Jika tidak, gunakan langsung
+            return parsed.config || parsed;
         }
         // Jika tidak ada config per user, gunakan default config
         return overlayConfig;
@@ -390,7 +393,9 @@ function saveUserConfig(username, config) {
         if (!fs.existsSync(usersDir)) {
             fs.mkdirSync(usersDir, { recursive: true });
         }
-        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+        // Simpan dengan wrapper "config" untuk konsistensi dengan format file yang sudah ada
+        const dataToSave = { config: config };
+        fs.writeFileSync(configPath, JSON.stringify(dataToSave, null, 2), 'utf8');
         return true;
     } catch (error) {
         console.error(`Error saving config for user ${username}:`, error);
@@ -651,7 +656,8 @@ function broadcastToClients(event, username = null) {
                 }
             });
         } else {
-            console.warn(`⚠️ No Socket.IO clients found for user: ${username}. Available users: ${Array.from(socketsByUser.keys()).join(', ')}`);
+            // Tidak ada client socket aktif untuk user ini, tapi ini normal dan tidak mempengaruhi save config
+            console.log(`ℹ️ No Socket.IO clients found for user: ${username}. Config tetap tersimpan di file JSON.`);
         }
     } else {
         // Broadcast ke semua sockets (backward compatibility)
@@ -1584,6 +1590,10 @@ app.get('/api/users/:username/config', apiLimiter, validateUsernameParam, (req, 
         }
         
         const config = loadUserConfig(username);
+        // Set headers untuk mencegah caching di browser
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.status(200).json({ success: true, config });
     } catch (error) {
         console.error('Error loading user config:', error);
@@ -1626,7 +1636,8 @@ app.put('/api/users/:username/config', userManagementLimiter, validateUsernamePa
         }
 
         if (saveUserConfig(username, config)) {
-            // Broadcast config update ke clients untuk user ini
+            // Broadcast config update ke clients untuk user ini (jika ada client aktif)
+            // Catatan: Broadcast tidak mempengaruhi hasil save, JSON sudah tersimpan
             const configUpdateEvent = {
                 type: 'config-updated',
                 data: {
@@ -1637,7 +1648,7 @@ app.put('/api/users/:username/config', userManagementLimiter, validateUsernamePa
             };
             broadcastToClients(configUpdateEvent, username);
             
-            console.log(`✅ Config updated for user ${username}`);
+            console.log(`✅ Config updated for user ${username} (JSON file saved)`);
             res.status(200).json({ 
                 success: true, 
                 message: 'Config berhasil disimpan' 

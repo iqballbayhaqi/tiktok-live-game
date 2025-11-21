@@ -47,7 +47,8 @@ class EventService {
                     }
                 });
             } else {
-                console.warn(`⚠️ No clients found for user: ${username}. Available users: ${Array.from(this.clientsByUser.keys()).join(', ')}`);
+                // Tidak ada client SSE aktif untuk user ini, tapi ini normal dan tidak mempengaruhi save config
+                console.log(`ℹ️ No SSE clients found for user: ${username}. Config tetap tersimpan di file JSON.`);
             }
         } else {
             // Broadcast ke semua clients (backward compatibility)
