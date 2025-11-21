@@ -22,6 +22,14 @@ class FireworkOverlay {
             { name: 'FloatingPhotosContainer', target: '#floating-photos-container-container' }
         ]);
 
+        // Pastikan container sudah ada sebelum inisialisasi
+        const container = document.getElementById('floating-photos-container');
+        if (!container) {
+            console.error('❌ FloatingPhotosContainer tidak ditemukan!');
+            return;
+        }
+        console.log('✅ FloatingPhotosContainer ditemukan');
+
         // Initialize FloatingPhotos component untuk firework
         this.components.floatingPhotos = new FloatingPhotos({
             floatingPhotos: this.config?.floatingPhotos,
@@ -65,14 +73,26 @@ class FireworkOverlay {
 
     initFloatingPhotos() {
         if (this.components.floatingPhotos) {
+            console.log('✅ Initializing FloatingPhotos component...');
             this.components.floatingPhotos.init();
+            console.log('✅ FloatingPhotos component initialized');
+        } else {
+            console.error('❌ FloatingPhotos component tidak tersedia untuk diinisialisasi!');
         }
     }
 
     addFirework(imageUrl = null, emoji = null, centerX = null, centerY = null, count = 20) {
-        if (this.components.floatingPhotos) {
-            this.components.floatingPhotos.addFirework(imageUrl, emoji, centerX, centerY, count);
+        console.log('🎆 FireworkOverlay.addFirework called:', { imageUrl, emoji, centerX, centerY, count });
+        if (!this.components.floatingPhotos) {
+            console.error('❌ FloatingPhotos component tidak tersedia!');
+            return;
         }
+        if (!this.components.floatingPhotos.container) {
+            console.error('❌ FloatingPhotos container tidak tersedia!');
+            return;
+        }
+        console.log('✅ Memanggil FloatingPhotos.addFirework...');
+        this.components.floatingPhotos.addFirework(imageUrl, emoji, centerX, centerY, count);
     }
 
     getGiftCoin(giftName) {
@@ -130,7 +150,15 @@ class FireworkOverlay {
             case 'firework':
                 // Event firework langsung (dari API atau manual trigger)
                 console.log('🎆 Triggering firework event with data:', data);
-                this.addFirework(data.imageUrl, data.emoji, data.centerX, data.centerY, data.count);
+                const fireworkData = {
+                    imageUrl: data.imageUrl || null,
+                    emoji: data.emoji || null,
+                    centerX: data.centerX !== undefined && data.centerX !== null ? parseInt(data.centerX) : null,
+                    centerY: data.centerY !== undefined && data.centerY !== null ? parseInt(data.centerY) : null,
+                    count: data.count !== undefined && data.count !== null ? parseInt(data.count) : 20
+                };
+                console.log('🎆 Firework data processed:', fireworkData);
+                this.addFirework(fireworkData.imageUrl, fireworkData.emoji, fireworkData.centerX, fireworkData.centerY, fireworkData.count);
                 break;
             
             case 'gift':

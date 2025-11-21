@@ -11,6 +11,7 @@ const path = require('path');
 const fs = require('fs');
 const { body, query, validationResult } = require('express-validator');
 const TikTokConnector = require('./tiktok-connector');
+const EventService = require('./services/EventService');
 const {
     securityHeaders,
     apiLimiter,
@@ -217,6 +218,11 @@ app.use('/src', express.static(path.join(__dirname, '../')));
 
 // Serve static files untuk assets (musik, images, dll)
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
+
+// Routes dari routes/index.js (SSE routes, API routes, dll)
+// HARUS di-mount sebelum route overlay untuk memastikan route SSE dipanggil dengan benar
+const routes = require('./routes');
+app.use(routes);
 
 // Store connected socket clients (untuk Socket.IO)
 // Struktur: { username: Set<socketId> }
@@ -621,13 +627,17 @@ function deleteUser(username) {
     return { success: false, error: 'Failed to delete user' };
 }
 
-// Broadcast function untuk TikTok events menggunakan Socket.IO
+// Broadcast function untuk TikTok events menggunakan Socket.IO dan SSE
 function broadcastToClients(event, username = null) {
+    // Broadcast ke SSE clients (untuk overlay yang menggunakan EventSource)
+    EventService.broadcastToClients(event, username);
+    
+    // Broadcast ke Socket.IO clients
     if (username) {
         // Broadcast ke sockets untuk user tertentu
         const userSocketIds = socketsByUser.get(username);
         if (userSocketIds && userSocketIds.size > 0) {
-            console.log(`📤 Broadcasting event "${event.type}" to ${userSocketIds.size} client(s) for user: ${username}`);
+            console.log(`📤 Broadcasting event "${event.type}" to ${userSocketIds.size} Socket.IO client(s) for user: ${username}`);
             userSocketIds.forEach(socketId => {
                 const socketData = allSockets.get(socketId);
                 if (socketData && socketData.socket) {
@@ -641,7 +651,7 @@ function broadcastToClients(event, username = null) {
                 }
             });
         } else {
-            console.warn(`⚠️ No clients found for user: ${username}. Available users: ${Array.from(socketsByUser.keys()).join(', ')}`);
+            console.warn(`⚠️ No Socket.IO clients found for user: ${username}. Available users: ${Array.from(socketsByUser.keys()).join(', ')}`);
         }
     } else {
         // Broadcast ke semua sockets (backward compatibility)
@@ -660,7 +670,7 @@ function broadcastToClients(event, username = null) {
                 }
             }
         });
-        console.log(`📤 Broadcasting event "${event.type}" to ${broadcastCount} client(s)`);
+        console.log(`📤 Broadcasting event "${event.type}" to ${broadcastCount} Socket.IO client(s)`);
     }
 }
 
@@ -1928,33 +1938,6 @@ app.get('/live/:code', validateLiveCodeParam, (req, res) => {
     
     // Serve overlay HTML dengan parameter code
     res.sendFile(overlayPath);
-});
-
-// Endpoint untuk backward compatibility dengan SSE (redirect ke socket.io info)
-app.get('/events', (req, res) => {
-    res.status(200).json({
-        success: false,
-        message: 'SSE endpoint deprecated. Please use Socket.IO instead.',
-        socketIoUrl: '/socket.io/'
-    });
-});
-
-app.get('/events/code/:code', (req, res) => {
-    res.status(200).json({
-        success: false,
-        message: 'SSE endpoint deprecated. Please use Socket.IO instead.',
-        socketIoUrl: '/socket.io/',
-        instructions: 'Connect to Socket.IO and emit "join-by-code" event with { code: "' + req.params.code + '" }'
-    });
-});
-
-app.get('/events/:username', (req, res) => {
-    res.status(200).json({
-        success: false,
-        message: 'SSE endpoint deprecated. Please use Socket.IO instead.',
-        socketIoUrl: '/socket.io/',
-        instructions: 'Connect to Socket.IO and emit "join-by-username" event with { username: "' + req.params.username + '" }'
-    });
 });
 
 // Webhook endpoints dengan support username parameter

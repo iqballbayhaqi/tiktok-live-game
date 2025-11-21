@@ -12,7 +12,15 @@ class FloatingPhotos {
     }
 
     init() {
-        if (!this.container) return;
+        // Cari container lagi jika belum ada (untuk memastikan container sudah dimuat)
+        if (!this.container) {
+            this.container = document.getElementById('floating-photos-container');
+        }
+        if (!this.container) {
+            console.error('❌ FloatingPhotos container tidak ditemukan!');
+            return;
+        }
+        console.log('✅ FloatingPhotos container ditemukan, memulai animasi...');
         this.animate();
     }
 
@@ -116,7 +124,15 @@ class FloatingPhotos {
     // Firework effect - membuat banyak foto muncul dari satu titik seperti kembang api
     // Tanpa queue system, langsung execute dan gunakan random position jika tidak ada center
     addFirework(imageUrl = null, emoji = null, centerX = null, centerY = null, count = 20) {
-        if (!this.container) return;
+        // Cari container lagi jika belum ada
+        if (!this.container) {
+            this.container = document.getElementById('floating-photos-container');
+        }
+        if (!this.container) {
+            console.error('❌ FloatingPhotos container tidak ditemukan saat addFirework!');
+            return;
+        }
+        console.log('🎆 FloatingPhotos.addFirework called:', { imageUrl, emoji, centerX, centerY, count });
         
         // Ambil konfigurasi firework dari config
         const giftFireworkConfig = this.config?.giftFirework || {};

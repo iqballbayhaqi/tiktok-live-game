@@ -1,166 +1,92 @@
 {
-  "features": {
-    "followerAlert": true,
-    "giftAlert": true,
-    "chatOverlay": true,
-    "streamTimer": false,
-    "viewerCount": false,
-    "customBanner": true,
-    "floatingPhotos": true,
-    "animations": true,
-    "tiktokConnector": true,
-    "webhookConnection": true
-  },
-  "alerts": {
-    "follower": {
-      "enabled": true,
-      "duration": 5000,
-      "position": {
-        "top": "50px",
-        "right": "50px"
+  "config": {
+    "features": {
+      "followerAlert": false,
+      "giftAlert": false,
+      "chatOverlay": false,
+      "streamTimer": false,
+      "viewerCount": false,
+      "customBanner": false,
+      "floatingPhotos": false,
+      "animations": false,
+      "tiktokConnector": false,
+      "webhookConnection": false
+    },
+    "alerts": {
+      "follower": {
+        "enabled": false,
+        "position": {}
+      },
+      "gift": {
+        "enabled": false,
+        "position": {}
       }
     },
-    "gift": {
-      "enabled": true,
-      "duration": 6000,
-      "position": {
-        "top": "50px",
-        "right": "50px"
-      }
-    }
-  },
-  "chat": {
-    "enabled": false,
-    "maxMessages": 10,
-    "position": {
-      "bottom": "50px",
-      "left": "50px"
-    },
-    "width": "500px",
-    "maxHeight": "400px"
-  },
-  "widgets": {
-    "streamStatus": {
+    "chat": {
       "enabled": false,
-      "label": "Streaming",
-      "defaultValue": "LIVE"
+      "position": {}
     },
-    "streamTimer": {
-      "enabled": false,
-      "position": {
-        "top": "50px",
-        "left": "50px"
+    "widgets": {
+      "streamStatus": {
+        "enabled": false
+      },
+      "streamTimer": {
+        "enabled": false,
+        "position": {}
+      },
+      "viewerCount": {
+        "enabled": false,
+        "showInChat": false
       }
     },
-    "viewerCount": {
-      "enabled": false,
-      "showInChat": true
-    }
-  },
-  "theme": {
-    "primary": {
-      "gradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      "solid": "#667eea"
+    "theme": {
+      "primary": {
+        "solid": "#000000"
+      },
+      "secondary": {
+        "solid": "#000000"
+      },
+      "text": "#000000"
     },
-    "secondary": {
-      "gradient": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-      "solid": "#f5576c"
-    },
-    "background": "rgba(0, 0, 0, 0.7)",
-    "text": "#ffffff"
-  },
-  "floatingPhotos": {
-    "randomColor": true,
-    "colorPalette": [
-      {
-        "name": "Purple",
-        "primary": "#667eea",
-        "secondary": "#764ba2"
-      },
-      {
-        "name": "Pink",
-        "primary": "#f093fb",
-        "secondary": "#f5576c"
-      },
-      {
-        "name": "Blue",
-        "primary": "#4facfe",
-        "secondary": "#00f2fe"
-      },
-      {
-        "name": "Green",
-        "primary": "#43e97b",
-        "secondary": "#38f9d7"
-      },
-      {
-        "name": "Orange",
-        "primary": "#fa709a",
-        "secondary": "#fee140"
-      },
-      {
-        "name": "Cyan",
-        "primary": "#30cfd0",
-        "secondary": "#330867"
-      },
-      {
-        "name": "Red",
-        "primary": "#f83600",
-        "secondary": "#f9d423"
-      },
-      {
-        "name": "Yellow",
-        "primary": "#f6d365",
-        "secondary": "#fda085"
-      },
-      {
-        "name": "Indigo",
-        "primary": "#667eea",
-        "secondary": "#764ba2"
-      },
-      {
-        "name": "Teal",
-        "primary": "#0ba360",
-        "secondary": "#3cba92"
+    "floatingPhotos": {
+      "randomColor": false,
+      "maxPhotos": 100,
+      "scale": 1,
+      "triggers": {
+        "chat": false,
+        "chatScale": 1,
+        "follow": false,
+        "followScale": 1,
+        "share": false,
+        "shareScale": 1,
+        "gift": false,
+        "giftScale": 1
       }
-    ],
-    "maxPhotos": 100,
-    "scale": 1,
-    "triggers": {
-      "chat": true,
-      "chatScale": 1,
-      "follow": true,
-      "followScale": 1.5,
-      "share": false,
-      "shareScale": 1,
-      "gift": false,
-      "giftScale": 1
-    }
-  },
-  "giftFloatingPhotos": {
-    "enabled": false,
-    "selectionMode": "manual",
-    "coinMin": null,
-    "coinMax": null
-  },
-  "giftFirework": {
-    "enabled": false,
-    "selectionMode": "manual",
-    "coinMin": null,
-    "coinMax": null
-  },
-  "giftJedagJedug": {
-    "enabled": true,
-    "selectionMode": "manual",
-    "gifts": [],
-    "coinMin": 1,
-    "coinMax": null,
-    "duration": 19691,
-    "volume": 0.7,
-    "centerX": null,
-    "centerY": null,
-    "musicPath": "/assets/music/jedag-jedug2.mp3",
-    "disco": {
-      "enabled": false
+    },
+    "giftFloatingPhotos": {
+      "enabled": false,
+      "selectionMode": "manual",
+      "coinMin": null,
+      "coinMax": null
+    },
+    "giftFirework": {
+      "enabled": false,
+      "selectionMode": "manual",
+      "coinMin": null,
+      "coinMax": null
+    },
+    "giftJedagJedug": {
+      "enabled": false,
+      "selectionMode": "manual",
+      "gifts": [],
+      "coinMin": null,
+      "coinMax": null,
+      "centerX": null,
+      "centerY": null,
+      "musicPath": "/assets/music/jedag-jedug.mp3",
+      "disco": {
+        "enabled": false
+      }
     }
   }
 }
