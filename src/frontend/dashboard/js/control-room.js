@@ -11,7 +11,7 @@ let deleteUserModal = null;
 // Theme Management
 class ThemeManager {
     constructor() {
-        this.currentTheme = localStorage.getItem('dashboard-theme') || 'dark';
+        this.currentTheme = localStorage.getItem('dashboard-theme') || 'light';
         this.init();
     }
 
