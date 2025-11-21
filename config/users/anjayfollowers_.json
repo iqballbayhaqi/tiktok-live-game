@@ -1,91 +1,93 @@
 {
   "config": {
-    "features": {
-      "followerAlert": false,
-      "giftAlert": false,
-      "chatOverlay": false,
-      "streamTimer": false,
-      "viewerCount": false,
-      "customBanner": false,
-      "floatingPhotos": false,
-      "animations": false,
-      "tiktokConnector": false,
-      "webhookConnection": false
-    },
-    "alerts": {
-      "follower": {
+    "config": {
+      "features": {
+        "followerAlert": false,
+        "giftAlert": false,
+        "chatOverlay": false,
+        "streamTimer": false,
+        "viewerCount": false,
+        "customBanner": false,
+        "floatingPhotos": false,
+        "animations": false,
+        "tiktokConnector": false
+      },
+      "alerts": {
+        "follower": {
+          "enabled": false,
+          "position": {}
+        },
+        "gift": {
+          "enabled": false,
+          "position": {}
+        }
+      },
+      "chat": {
         "enabled": false,
         "position": {}
       },
-      "gift": {
+      "widgets": {
+        "streamStatus": {
+          "enabled": false
+        },
+        "streamTimer": {
+          "enabled": false,
+          "position": {}
+        },
+        "viewerCount": {
+          "enabled": false,
+          "showInChat": false
+        }
+      },
+      "theme": {
+        "primary": {
+          "solid": "#000000"
+        },
+        "secondary": {
+          "solid": "#000000"
+        },
+        "text": "#000000"
+      },
+      "floatingPhotos": {
+        "randomColor": false,
+        "maxPhotos": 100,
+        "scale": 1,
+        "triggers": {
+          "chat": false,
+          "chatScale": 1,
+          "follow": false,
+          "followScale": 1,
+          "share": false,
+          "shareScale": 1,
+          "gift": false,
+          "giftScale": 1
+        }
+      },
+      "giftFloatingPhotos": {
         "enabled": false,
-        "position": {}
-      }
-    },
-    "chat": {
-      "enabled": false,
-      "position": {}
-    },
-    "widgets": {
-      "streamStatus": {
-        "enabled": false
+        "selectionMode": "manual",
+        "coinMin": null,
+        "coinMax": null
       },
-      "streamTimer": {
+      "giftFirework": {
         "enabled": false,
-        "position": {}
+        "selectionMode": "manual",
+        "coinMin": null,
+        "coinMax": null
       },
-      "viewerCount": {
+      "giftJedagJedug": {
         "enabled": false,
-        "showInChat": false
-      }
-    },
-    "theme": {
-      "primary": {
-        "solid": "#000000"
-      },
-      "secondary": {
-        "solid": "#000000"
-      },
-      "text": "#000000"
-    },
-    "floatingPhotos": {
-      "randomColor": true,
-      "maxPhotos": 500,
-      "scale": 1,
-      "triggers": {
-        "chat": true,
-        "chatScale": 1,
-        "follow": false,
-        "followScale": 1,
-        "share": false,
-        "shareScale": 1,
-        "gift": false,
-        "giftScale": 1
-      }
-    },
-    "giftFloatingPhotos": {
-      "enabled": false,
-      "selectionMode": "manual",
-      "coinMin": null,
-      "coinMax": null
-    },
-    "giftFirework": {
-      "enabled": false,
-      "selectionMode": "manual",
-      "coinMin": null,
-      "coinMax": null
-    },
-    "giftJedagJedug": {
-      "enabled": false,
-      "selectionMode": "manual",
-      "gifts": [],
-      "coinMin": null,
-      "coinMax": null,
-      "centerX": null,
-      "centerY": null,
-      "musicPath": "/assets/music/jedag-jedug.mp3",
-      "disco": {
-        "enabled": false
+        "selectionMode": "manual",
+        "gifts": [],
+        "coinMin": null,
+        "coinMax": null,
+        "duration": 19691,
+        "centerX": null,
+        "centerY": null,
+        "musicPath": "/assets/music/jedag-jedug2.mp3",
+        "disco": {
+          "enabled": false
+        }
       }
     }
   }

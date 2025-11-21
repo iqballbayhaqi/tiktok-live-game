@@ -383,6 +383,9 @@ async function simulateFloatingPhoto() {
     const emoji = emojiInput ? emojiInput.value.trim() : '';
     const imageUrl = imageUrlInput ? imageUrlInput.value.trim() : '';
 
+    console.log('imageUrl:', imageUrl);
+    
+
     // Validasi: minimal harus ada emoji atau imageUrl
     if (!emoji && !imageUrl) {
         // Jika keduanya kosong, gunakan emoji default

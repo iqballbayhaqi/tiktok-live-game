@@ -400,7 +400,6 @@ class ConfigForm {
         this.setNestedValue('features.floatingPhotos', config.features?.floatingPhotos);
         this.setNestedValue('features.animations', config.features?.animations);
         this.setNestedValue('features.tiktokConnector', config.features?.tiktokConnector);
-        this.setNestedValue('features.webhookConnection', config.features?.webhookConnection);
 
         // Alerts
         this.setNestedValue('alerts.follower.enabled', config.alerts?.follower?.enabled);
@@ -671,8 +670,7 @@ class ConfigForm {
                 customBanner: this.getNestedValue('features.customBanner'),
                 floatingPhotos: this.getNestedValue('features.floatingPhotos'),
                 animations: this.getNestedValue('features.animations'),
-                tiktokConnector: this.getNestedValue('features.tiktokConnector'),
-                webhookConnection: this.getNestedValue('features.webhookConnection')
+                tiktokConnector: this.getNestedValue('features.tiktokConnector')
             },
             alerts: {
                 follower: {

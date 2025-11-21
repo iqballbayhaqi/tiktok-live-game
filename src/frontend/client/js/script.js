@@ -693,12 +693,6 @@ function reloadConfig(newConfig) {
 }
 
 function connectWebhookServer() {
-    const config = typeof OverlayConfig !== 'undefined' ? OverlayConfig : { features: {} };
-    if (config.features && config.features.webhookConnection === false) {
-        console.log('ℹ️ Webhook connection disabled via feature flag');
-        return;
-    }
-    
     if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
         return;
     }

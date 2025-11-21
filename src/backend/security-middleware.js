@@ -358,8 +358,17 @@ const validateWebhookBanner = [
 const validateWebhookFloatingPhoto = [
     body('imageUrl')
         .optional()
-        .isURL({ protocols: ['http', 'https'] })
-        .withMessage('Image URL harus valid')
+        .custom((value) => {
+            if (!value) return true; // Optional field, boleh kosong
+            // Cek apakah itu URL valid (http/https)
+            const isUrl = /^https?:\/\/.+/.test(value);
+            // Cek apakah itu path lokal yang dimulai dengan /assets/
+            const isLocalPath = /^\/assets\/.+/.test(value);
+            if (isUrl || isLocalPath) {
+                return true;
+            }
+            throw new Error('Image URL harus berupa URL valid (http/https) atau path lokal (/assets/...)');
+        })
         .isLength({ max: 500 }),
     body('emoji')
         .optional()

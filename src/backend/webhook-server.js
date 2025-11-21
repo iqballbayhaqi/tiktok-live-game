@@ -140,8 +140,7 @@ function isFeatureEnabled(featureName, defaultValue = true) {
         'CUSTOM_BANNER': 'customBanner',
         'FLOATING_PHOTOS': 'floatingPhotos',
         'ANIMATIONS': 'animations',
-        'TIKTOK_CONNECTOR': 'tiktokConnector',
-        'WEBHOOK_CONNECTION': 'webhookConnection'
+        'TIKTOK_CONNECTOR': 'tiktokConnector'
     };
     
     const configKey = featureMap[featureName] || featureName.toLowerCase();

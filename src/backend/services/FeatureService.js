@@ -20,8 +20,7 @@ class FeatureService {
             'CUSTOM_BANNER': config.features?.customBanner,
             'FLOATING_PHOTOS': config.features?.floatingPhotos,
             'ANIMATIONS': config.features?.animations,
-            'TIKTOK_CONNECTOR': config.features?.tiktokConnector,
-            'WEBHOOK_CONNECTION': config.features?.webhookConnection
+            'TIKTOK_CONNECTOR': config.features?.tiktokConnector
         };
         
         const featureValue = featureMap[featureName];
