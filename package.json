@@ -9,7 +9,9 @@
     "dev": "nodemon",
     "dev:open": "concurrently \"nodemon\" \"wait-on http://localhost:3000 && opener http://localhost:3000\"",
     "test": "node tests/test-webhook.js",
-    "test:with-server": "node tests/test-with-server.js"
+    "test:with-server": "node tests/test-with-server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [
     "tiktok",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "eslint": "^9.39.1",
     "nodemon": "^3.0.1",
     "opener": "^1.5.2",
     "wait-on": "^7.2.0"

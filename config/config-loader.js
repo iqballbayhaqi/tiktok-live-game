@@ -49,8 +49,6 @@ const defaultConfig = {
         ]
     },
     puzzlePhoto: {
-        enabled: true,
-        size: '3x3',
         coin3x3: 1,
         coin4x4: 10
     }
@@ -147,7 +145,7 @@ function getLiveCodeFromUrl() {
     const pathname = window.location.pathname;
     
     // Cek pattern untuk overlay khusus: /live/floating-photos/:id, /live/firework/:id, /live/jedagjedug/:id, /live/chat/:id, /live/follower-alert/:id, /live/gift-alert/:id
-    const specialOverlayMatch = pathname.match(/^\/live\/(floating-photos|firework|jedagjedug|chat|follower-alert|gift-alert)\/([^\/\?]+)/);
+    const specialOverlayMatch = pathname.match(/^\/live\/(floating-photos|firework|jedagjedug|chat|follower-alert|gift-alert|puzzle-photo)\/([^\/\?]+)/);
     if (specialOverlayMatch && specialOverlayMatch[2]) {
         // Return live code (ID) dari pattern khusus
         return specialOverlayMatch[2];
@@ -190,13 +188,16 @@ function loadConfig() {
             fetch(`/api/users`)
                 .then(response => response.json())
                 .then(data => {
+                    
                     if (data.success && data.users) {
                         const user = data.users.find(u => u.liveCode === liveCode);
+                        
                         if (user) {
                             identifier = user.username;
                             window.currentUsername = user.username;
                             window.currentLiveCode = liveCode;
                             // Load config untuk user ini
+                            
                             return fetch(`/api/users/${encodeURIComponent(user.username)}/config`);
                         }
                     }

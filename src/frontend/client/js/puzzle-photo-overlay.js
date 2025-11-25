@@ -15,13 +15,18 @@ class PuzzlePhotoOverlay {
         this.config = null;
         this.components = {};
         this.giftsData = {};
+        this.queue = []; // Antrian untuk puzzle photo
+        this.isProcessing = false; // Flag untuk mengetahui apakah puzzle sedang diproses
         this.init();
     }
 
     async init() {
-        // Initialize PuzzlePhoto component
+        // Initialize PuzzlePhoto component dengan callback ketika puzzle selesai
         this.components.puzzlePhoto = new PuzzlePhoto({
-            puzzlePhoto: this.config?.puzzlePhoto
+            puzzlePhoto: this.config?.puzzlePhoto,
+            onPuzzleComplete: () => {
+                this.onPuzzleComplete();
+            }
         });
 
         // Handle window resize
@@ -52,14 +57,7 @@ class PuzzlePhotoOverlay {
             this.config = OverlayConfig;
             console.log('✅ Config loaded for Puzzle Photo Overlay');
             
-            // Update puzzle size from config
-            if (this.config?.puzzlePhoto?.size) {
-                const sizeStr = this.config.puzzlePhoto.size;
-                const size = sizeStr === '4x4' ? 4 : 3;
-                if (this.components.puzzlePhoto) {
-                    this.components.puzzlePhoto.setSize(size);
-                }
-            }
+            // Puzzle size will be determined dynamically based on gift coin
         } else {
             console.warn('⚠️ OverlayConfig belum tersedia');
         }
@@ -107,7 +105,7 @@ class PuzzlePhotoOverlay {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'p' || e.key === 'P') {
                 // Test dengan gambar default
-                this.triggerPuzzlePhoto('/assets/images/tiktok-default-photo.jpg');
+                this.triggerPuzzlePhoto('/assets/images/tiktok-default-photo.jpg', 3, 'Test User', '/assets/images/tiktok-default-photo.jpg', 'Test Gift');
             }
         });
     }
@@ -120,28 +118,44 @@ class PuzzlePhotoOverlay {
             case 'puzzle-photo':
                 // Event puzzle-photo langsung (dari API atau manual trigger)
                 console.log('🧩 Triggering puzzle-photo event with data:', data);
-                this.triggerPuzzlePhoto(data.imageUrl || data.giftImageUrl);
+                const imageUrl = data.imageUrl || data.giftImageUrl;
+                const size = data.size || null; // Size bisa dikirim dari event (3 atau 4)
+                const username = data.username || 'User';
+                const avatarUrl = data.avatarUrl || data.profilePictureUrl || imageUrl;
+                this.triggerPuzzlePhoto(imageUrl, size, username, avatarUrl);
                 break;
             
             case 'gift':
-                // Trigger puzzle photo jika puzzlePhoto enabled dan gift sesuai konfigurasi
+                // Trigger puzzle photo jika gift sesuai konfigurasi
                 if (this.config?.puzzlePhoto) {
                     const giftName = data.giftName || '';
                     const giftCoin = this.getGiftCoin(giftName);
-                    const giftImageUrl = data.giftImageUrl || null;
                     const avatarUrl = data.avatarUrl || data.profilePictureUrl || null;
+                    const username = data.username || 'User';
                     
-                    // Check coin requirement based on puzzle size
-                    const puzzleSize = this.config?.puzzlePhoto?.size || '3x3';
-                    const requiredCoin = puzzleSize === '4x4' 
-                        ? (this.config?.puzzlePhoto?.coin4x4 || 10)
-                        : (this.config?.puzzlePhoto?.coin3x3 || 5);
+                    if (!avatarUrl) {
+                        console.log(`ℹ️ Gift event ignored - no avatar image available`);
+                        break;
+                    }
                     
-                    if (giftCoin >= requiredCoin && avatarUrl) {
-                        console.log(`🧩 Triggering puzzle-photo from gift event: ${giftName} (${giftCoin} coin, required: ${requiredCoin})`);
-                        this.triggerPuzzlePhoto(avatarUrl);
+                    // Check coin requirement for both sizes
+                    const coin3x3 = this.config?.puzzlePhoto?.coin3x3 || 1;
+                    const coin4x4 = this.config?.puzzlePhoto?.coin4x4 || 10;
+                    
+                    // Determine which puzzle size to trigger (prioritize larger if coin is enough)
+                    let puzzleSize = null;
+                    if (giftCoin >= coin4x4) {
+                        puzzleSize = 4; // Trigger 4x4
+                        console.log(`🧩 Triggering puzzle-photo 4x4 from gift event: ${giftName} (${giftCoin} coin, required: ${coin4x4})`);
+                    } else if (giftCoin >= coin3x3) {
+                        puzzleSize = 3; // Trigger 3x3
+                        console.log(`🧩 Triggering puzzle-photo 3x3 from gift event: ${giftName} (${giftCoin} coin, required: ${coin3x3})`);
+                    }
+                    
+                    if (puzzleSize) {
+                        this.triggerPuzzlePhoto(avatarUrl, puzzleSize, username, avatarUrl, giftName);
                     } else {
-                        console.log(`ℹ️ Gift event ignored - gift "${giftName}" coin (${giftCoin}) is less than required (${requiredCoin}) or no image`);
+                        console.log(`ℹ️ Gift event ignored - gift "${giftName}" coin (${giftCoin}) is less than required (3x3: ${coin3x3}, 4x4: ${coin4x4}) or sizes disabled`);
                     }
                 } else {
                     console.log(`ℹ️ Gift event ignored - puzzlePhoto not configured`);
@@ -150,7 +164,7 @@ class PuzzlePhotoOverlay {
         }
     }
 
-    triggerPuzzlePhoto(imageUrl) {
+    triggerPuzzlePhoto(imageUrl, size = null, username = 'User', avatarUrl = null, giftName = null) {
         if (!imageUrl) {
             console.warn('⚠️ No image URL provided for puzzle photo');
             return;
@@ -161,14 +175,183 @@ class PuzzlePhotoOverlay {
             return;
         }
 
-        // Set puzzle size from config
-        const puzzleSize = this.config?.puzzlePhoto?.size || '3x3';
-        const size = puzzleSize === '4x4' ? 4 : 3;
-        this.components.puzzlePhoto.setSize(size);
+        // Tambahkan ke antrian
+        const puzzleSize = size || 3;
+        this.queue.push({
+            imageUrl: imageUrl,
+            size: puzzleSize,
+            username: username,
+            avatarUrl: avatarUrl || imageUrl,
+            giftName: giftName
+        });
+        
+        console.log(`📋 Puzzle photo ditambahkan ke antrian (user: ${username}, ukuran: ${puzzleSize}x${puzzleSize}, total dalam antrian: ${this.queue.length})`);
+        
+        // Update tampilan avatar dari antrian
+        this.updateQueueAvatars();
+        
+        // Proses antrian jika belum ada yang diproses
+        if (!this.isProcessing) {
+            this.processQueue();
+        }
+    }
+
+    processQueue() {
+        // Jika antrian kosong atau sedang memproses, return
+        if (this.queue.length === 0 || this.isProcessing) {
+            return;
+        }
+
+        // Ambil item pertama dari antrian (jangan shift, biarkan di queue untuk ditampilkan)
+        const item = this.queue[0];
+        this.isProcessing = true;
+
+        console.log(`🔄 Memproses puzzle photo dari antrian (user: ${item.username}, ukuran: ${item.size}x${item.size}, tersisa: ${this.queue.length})`);
+
+        // Update tampilan avatar dari antrian (skip yang sedang diproses)
+        this.updateQueueAvatars();
+
+        // Tampilkan user info
+        this.showUserInfo(item.username, item.giftName);
+
+        // Set puzzle size
+        this.components.puzzlePhoto.setSize(item.size);
 
         // Set image and create puzzle
-        this.components.puzzlePhoto.setImage(imageUrl);
-        console.log(`🧩 Puzzle photo created with size ${size}x${size} and image: ${imageUrl}`);
+        this.components.puzzlePhoto.setImage(item.imageUrl);
+        console.log(`🧩 Puzzle photo dibuat dengan ukuran ${item.size}x${item.size} dan gambar: ${item.imageUrl}`);
+    }
+
+    onPuzzleComplete() {
+        console.log('✅ Puzzle selesai, menunggu beberapa detik sebelum memproses antrian berikutnya...');
+        
+        // Hapus item yang sudah selesai dari antrian
+        if (this.queue.length > 0) {
+            this.queue.shift();
+        }
+        
+        // Update tampilan avatar dari antrian
+        this.updateQueueAvatars();
+        
+        // Tunggu beberapa detik sebelum memproses item berikutnya (untuk menampilkan hasil)
+        setTimeout(() => {
+            this.isProcessing = false;
+            
+            // Sembunyikan user info jika tidak ada item lagi
+            if (this.queue.length === 0) {
+                this.hideUserInfo();
+            }
+            
+            // Proses item berikutnya dalam antrian jika ada
+            if (this.queue.length > 0) {
+                console.log(`📋 Masih ada ${this.queue.length} item dalam antrian, melanjutkan...`);
+                this.processQueue();
+            } else {
+                console.log('📋 Antrian kosong, menunggu puzzle photo berikutnya...');
+            }
+        }, 3000); // Tunggu 3 detik sebelum memproses berikutnya
+    }
+
+    showUserInfo(username, giftName) {
+        const userInfoEl = document.getElementById('puzzle-user-info');
+        if (!userInfoEl) return;
+
+        const userNameEl = userInfoEl.querySelector('.user-name');
+        const userGiftEl = userInfoEl.querySelector('.user-gift');
+
+        if (userNameEl) {
+            userNameEl.textContent = username;
+        }
+
+        if (userGiftEl) {
+            if (giftName) {
+                userGiftEl.textContent = `Mengirim ${giftName}`;
+            } else {
+                userGiftEl.textContent = '';
+            }
+        }
+
+        userInfoEl.classList.add('active');
+    }
+
+    hideUserInfo() {
+        const userInfoEl = document.getElementById('puzzle-user-info');
+        if (userInfoEl) {
+            userInfoEl.classList.remove('active');
+        }
+    }
+
+    updateQueueAvatars() {
+        const containerLeft = document.getElementById('puzzle-avatars-container-left');
+        const containerBottom = document.getElementById('puzzle-avatars-container-bottom');
+        const containerRight = document.getElementById('puzzle-avatars-container-right');
+        
+        if (!containerLeft || !containerBottom || !containerRight) return;
+
+        // Hapus semua avatar yang ada dari semua container
+        containerLeft.innerHTML = '';
+        containerBottom.innerHTML = '';
+        containerRight.innerHTML = '';
+
+        // Tampilkan avatar dari antrian yang belum diproses (skip yang sedang diproses)
+        // Mulai dari index 1 karena index 0 sedang diproses
+        const avatarsToShow = this.isProcessing ? this.queue.slice(1) : this.queue;
+        const maxAvatarsPerContainer = 8;
+        const totalMaxAvatars = maxAvatarsPerContainer * 3; // 24 total (8 kiri, 8 bawah, 8 kanan)
+
+        // Hitung jumlah avatar yang tidak terlihat
+        const remainingCount = avatarsToShow.length - totalMaxAvatars;
+        const shouldShowIndicator = remainingCount > 0;
+
+        // Tentukan berapa banyak avatar yang akan ditampilkan
+        // Jika ada sisa, hanya tampilkan 23 avatar (8 kiri + 8 bawah + 7 kanan) + 1 indikator
+        const avatarsToDisplay = shouldShowIndicator ? totalMaxAvatars - 1 : totalMaxAvatars;
+
+        avatarsToShow.slice(0, avatarsToDisplay).forEach((item, index) => {
+            const avatarEl = document.createElement('img');
+            avatarEl.className = `queue-avatar position-${index % maxAvatarsPerContainer} active`;
+            avatarEl.src = item.avatarUrl || item.imageUrl;
+            avatarEl.alt = item.username || 'User';
+            avatarEl.title = item.username || 'User';
+
+            // Distribusikan ke container yang sesuai
+            if (index < maxAvatarsPerContainer) {
+                // Container kiri: index 0-7
+                containerLeft.appendChild(avatarEl);
+            } else if (index < maxAvatarsPerContainer * 2) {
+                // Container bawah: index 8-15
+                containerBottom.appendChild(avatarEl);
+            } else {
+                // Container kanan: index 16-22 (jika ada indikator) atau 16-23 (jika tidak ada)
+                containerRight.appendChild(avatarEl);
+            }
+        });
+
+        // Tambahkan indikator "+X" di container kanan jika ada sisa
+        if (shouldShowIndicator) {
+            const indicatorEl = document.createElement('div');
+            indicatorEl.className = `queue-avatar position-${maxAvatarsPerContainer - 1} active queue-avatar-indicator`;
+            indicatorEl.textContent = `+${remainingCount}`;
+            indicatorEl.style.cssText = `
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                border: 3px solid #fff;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Poppins', sans-serif;
+                font-size: 18px;
+                font-weight: 600;
+                color: #fff;
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+                transition: opacity 0.3s ease, transform 0.3s ease;
+            `;
+            indicatorEl.classList.add('active');
+            containerRight.appendChild(indicatorEl);
+        }
     }
 }
 
@@ -262,7 +445,6 @@ function connectWebhookServer() {
     eventSource.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            console.log('📥 Received SSE event:', data);
             
             if (data.type === 'connected') {
                 if (data.liveCode) {
@@ -276,12 +458,7 @@ function connectWebhookServer() {
                 if (overlay) {
                     overlay.config = data.data.config;
                     overlay.applyTheme();
-                    // Update puzzle size if changed
-                    if (overlay.config?.puzzlePhoto?.size && overlay.components.puzzlePhoto) {
-                        const sizeStr = overlay.config.puzzlePhoto.size;
-                        const size = sizeStr === '4x4' ? 4 : 3;
-                        overlay.components.puzzlePhoto.setSize(size);
-                    }
+                    // Puzzle size will be determined dynamically based on gift coin
                 }
                 return;
             }
@@ -297,7 +474,7 @@ function connectWebhookServer() {
                     console.warn(`⚠️ ${data.type} event received but overlay or data is missing:`, { overlay: !!overlay, data: data.data });
                 }
             } else {
-                console.log(`ℹ️ Ignoring event type: ${data.type} (this overlay only processes puzzle-photo trigger events)`);
+                // console.log(`ℹ️ Ignoring event type: ${data.type} (this overlay only processes puzzle-photo trigger events)`);
             }
         } catch (error) {
             console.error('Error processing webhook event:', error);

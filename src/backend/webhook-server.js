@@ -205,6 +205,8 @@ app.use('/components', express.static(path.join(__dirname, '../frontend/client/c
 app.use('/live-code-not-found', express.static(path.join(__dirname, '../frontend/client/pages/live-code-not-found')));
 // Serve static files untuk landing page
 app.use('/landing', express.static(path.join(__dirname, '../frontend/client/pages/landing')));
+// Serve static files untuk puzzle-photo page
+app.use('/live/puzzle-photo', express.static(path.join(__dirname, '../frontend/client/pages/puzzle-photo')));
 
 // Serve shared files
 app.use('/shared/js', express.static(path.join(__dirname, '../frontend/shared/js')));

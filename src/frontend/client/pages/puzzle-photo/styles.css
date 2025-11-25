@@ -1,0 +1,170 @@
+#puzzle-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    flex-direction: row;
+}
+
+#puzzle {
+    position: relative;
+    border: 2px solid #555;
+    background: #eee;
+}
+
+.tile {
+    position: absolute;
+    border: 1px solid #aaa;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 2px black;
+    padding: 3px;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.tile-number {
+    position: absolute;
+    left: 4px;
+    top: 2px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #fff;
+}
+
+/* User info text di atas puzzle */
+#puzzle-user-info {
+    position: initial;
+    text-align: center;
+    transition: opacity 0.3s ease;
+}
+
+#puzzle-user-info.active {
+    opacity: 1;
+}
+
+#puzzle-user-info .user-name {
+    font-family: 'Poppins', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    margin-bottom: 5px;
+}
+
+/* Container untuk avatar yang mengelilingi puzzle */
+#puzzle-avatars-container-left {
+    position: initial;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+#puzzle-container-center {
+    position: initial;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+#puzzle-container-center #puzzle {
+    pointer-events: auto;
+}
+
+#puzzle-avatars-container-right {
+    position: initial;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.queue-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    object-fit: cover;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.queue-avatar.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Posisi avatar mengelilingi puzzle */
+.queue-avatar.position-0 {
+    bottom: -80px;
+    left: 0;
+}
+
+.queue-avatar.position-1 {
+    bottom: -80px;
+    left: 80px;
+}
+
+.queue-avatar.position-2 {
+    bottom: -80px;
+    left: 160px;
+}
+
+.queue-avatar.position-3 {
+    bottom: -80px;
+    right: 160px;
+}
+
+.queue-avatar.position-4 {
+    bottom: -80px;
+    right: 80px;
+}
+
+.queue-avatar.position-5 {
+    bottom: -80px;
+    right: 0;
+}
+
+.queue-avatar.position-6 {
+    top: -80px;
+    right: 0;
+}
+
+.queue-avatar.position-7 {
+    top: -80px;
+    right: 80px;
+}
+
+.queue-avatar.position-8 {
+    top: -80px;
+    right: 160px;
+}
+
+.queue-avatar.position-9 {
+    top: -80px;
+    left: 160px;
+}
+
+.queue-avatar.position-10 {
+    top: -80px;
+    left: 80px;
+}
+
+.queue-avatar.position-11 {
+    top: -80px;
+    left: 0;
+}

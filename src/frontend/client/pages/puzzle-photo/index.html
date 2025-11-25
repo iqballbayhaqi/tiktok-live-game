@@ -8,50 +8,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        #puzzle-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        #puzzle {
-            position: relative;
-            border: 2px solid #555;
-            background: #eee;
-        }
-
-        .tile {
-            position: absolute;
-            border: 1px solid #aaa;
-            box-sizing: border-box;
-            cursor: pointer;
-            transition: 0.2s;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 1px 1px 2px black;
-            padding: 3px;
-        }
-
-        .tile-number {
-            position: absolute;
-            left: 4px;
-            top: 2px;
-            background: rgba(0,0,0,0.5);
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #fff;
-        }
-    </style>
+    <link rel="stylesheet" href="/live/puzzle-photo/styles.css">
 </head>
 <body>
     <div id="puzzle-container">
-        <div id="puzzle"></div>
+        
+        <!-- Container untuk avatar yang mengelilingi puzzle -->
+        <div id="puzzle-avatars-container-left"></div>
+        
+        <div id="puzzle-container-center">
+            <!-- User info text di atas puzzle -->
+            <div id="puzzle-user-info">
+                <div class="user-name"></div>
+            </div>
+            <div id="puzzle"></div>
+            <div id="puzzle-avatars-container-bottom"></div>
+        </div>
+
+        <div id="puzzle-avatars-container-right"></div>
     </div>
 
     <!-- Load config loader sebelum script -->

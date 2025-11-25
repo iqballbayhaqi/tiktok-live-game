@@ -625,39 +625,27 @@
             <h3><i class="fas fa-toggle-on"></i> Aktifasi Puzzle Photo</h3>
             <p class="form-text">Aktifkan efek puzzle photo</p>
             
-            <div class="form-grid">
-                <div class="form-group checkbox-group">
-                    <label>
-                        <input type="checkbox" name="puzzlePhoto.enabled" id="puzzlePhotoEnabled">
-                        <span>Aktifkan Puzzle Photo Effect</span>
-                    </label>
-                    <small class="form-text">Aktifkan untuk memunculkan puzzle photo saat gift dengan coin yang sesuai diterima</small>
-                </div>
-            </div>
-        </div>
-
         <div class="subsection">
             <h3><i class="fas fa-puzzle-piece"></i> Pengaturan Puzzle</h3>
             <p class="form-text">Konfigurasi ukuran puzzle dan jumlah coin yang diperlukan</p>
             
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Ukuran Puzzle</label>
-                    <div class="radio-group">
-                        <label class="radio-label" style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                            <input type="radio" name="puzzlePhoto.size" value="3x3" id="puzzlePhotoSize3x3" checked>
-                            <span>3x3 =</span>
-                            <input type="number" name="puzzlePhoto.coin3x3" id="puzzlePhotoCoin3x3" min="0" value="5" class="form-control" style="width: 100px;">
-                            <span>coin</span>
-                        </label>
-                        <label class="radio-label" style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                            <input type="radio" name="puzzlePhoto.size" value="4x4" id="puzzlePhotoSize4x4">
-                            <span>4x4 =</span>
-                            <input type="number" name="puzzlePhoto.coin4x4" id="puzzlePhotoCoin4x4" min="0" value="10" class="form-control" style="width: 100px;">
-                            <span>coin</span>
-                        </label>
+                    <label>Puzzle 3x3</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" name="puzzlePhoto.coin3x3" id="puzzlePhotoCoin3x3" min="0" value="1" class="form-control" style="width: 100px;">
+                        <span>coin</span>
                     </div>
-                    <small class="form-text">Pilih ukuran puzzle dan atur jumlah coin yang diperlukan</small>
+                    <small class="form-text">Aktifkan puzzle 3x3 dan atur jumlah coin yang diperlukan</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Puzzle 4x4</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" name="puzzlePhoto.coin4x4" id="puzzlePhotoCoin4x4" min="0" value="10" class="form-control" style="width: 100px;">
+                        <span>coin</span>
+                    </div>
+                    <small class="form-text">Aktifkan puzzle 4x4 dan atur jumlah coin yang diperlukan</small>
                 </div>
             </div>
         </div>

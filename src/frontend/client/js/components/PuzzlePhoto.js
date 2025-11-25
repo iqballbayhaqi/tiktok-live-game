@@ -1,4 +1,5 @@
 // Puzzle Photo Component
+// eslint-disable-next-line no-unused-vars
 class PuzzlePhoto {
     constructor(config = {}) {
         this.config = config;
@@ -8,6 +9,7 @@ class PuzzlePhoto {
         this.puzzleContainer = document.getElementById('puzzle-container');
         this.tileSize = 0;
         this.puzzleSize = 300; // Default puzzle size in pixels
+        this.onPuzzleComplete = config.onPuzzleComplete || null; // Callback ketika puzzle selesai
     }
 
     setSize(size) {
@@ -34,6 +36,7 @@ class PuzzlePhoto {
     }
 
     makePuzzle() {
+        console.log('makePuzzle => ', this.imageUrl);
         if (!this.puzzleElement || !this.imageUrl) return;
         
         this.puzzleElement.innerHTML = "";
@@ -73,6 +76,8 @@ class PuzzlePhoto {
     }
 
     moveTile(tile) {
+        console.log('moveTile => ', tile);
+        
         let emptyPos = this.getEmptyPosition();
         let tilePos = {
             x: parseInt(tile.style.left),
@@ -111,7 +116,6 @@ class PuzzlePhoto {
     checkWin() {
         const tiles = document.querySelectorAll('.tile');
         let isWin = true;
-        let expectedIndex = 0;
 
         tiles.forEach(tile => {
             const x = parseInt(tile.style.left) / this.tileSize;
@@ -127,10 +131,16 @@ class PuzzlePhoto {
 
         if (isWin) {
             console.log('🎉 Puzzle solved!');
-            // Optional: Add win animation or callback
-            setTimeout(() => {
-                this.makePuzzle(); // Restart puzzle
-            }, 2000);
+            
+            // Panggil callback jika ada (untuk sistem antrian)
+            if (this.onPuzzleComplete && typeof this.onPuzzleComplete === 'function') {
+                this.onPuzzleComplete();
+            } else {
+                // Jika tidak ada callback, restart puzzle seperti sebelumnya
+                setTimeout(() => {
+                    this.makePuzzle(); // Restart puzzle
+                }, 2000);
+            }
         }
     }
 

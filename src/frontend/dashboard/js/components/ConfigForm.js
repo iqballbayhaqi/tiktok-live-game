@@ -497,24 +497,10 @@ class ConfigForm {
         this.setNestedValue('giftJedagJedug.centerY', config.giftJedagJedug?.centerY);
         
         // Puzzle Photo
-        this.setNestedValue('puzzlePhoto.enabled', config.puzzlePhoto?.enabled || false);
-        this.setNestedValue('puzzlePhoto.size', config.puzzlePhoto?.size || '3x3');
-        this.setNestedValue('puzzlePhoto.coin3x3', config.puzzlePhoto?.coin3x3 || 5);
+        this.setNestedValue('puzzlePhoto.enabled3x3', config.puzzlePhoto?.enabled3x3 !== undefined ? config.puzzlePhoto.enabled3x3 : true);
+        this.setNestedValue('puzzlePhoto.enabled4x4', config.puzzlePhoto?.enabled4x4 !== undefined ? config.puzzlePhoto.enabled4x4 : true);
+        this.setNestedValue('puzzlePhoto.coin3x3', config.puzzlePhoto?.coin3x3 || 1);
         this.setNestedValue('puzzlePhoto.coin4x4', config.puzzlePhoto?.coin4x4 || 10);
-        
-        // Set radio button for puzzle size
-        const puzzleSize = config.puzzlePhoto?.size || '3x3';
-        const puzzleSize3x3 = document.getElementById('puzzlePhotoSize3x3');
-        const puzzleSize4x4 = document.getElementById('puzzlePhotoSize4x4');
-        if (puzzleSize3x3 && puzzleSize4x4) {
-            if (puzzleSize === '4x4') {
-                puzzleSize4x4.checked = true;
-                puzzleSize3x3.checked = false;
-            } else {
-                puzzleSize3x3.checked = true;
-                puzzleSize4x4.checked = false;
-            }
-        }
 
         // Set music path - ensure music select is populated first
         if (this.musicData && this.musicData.length > 0) {
@@ -808,9 +794,9 @@ class ConfigForm {
                 }
             },
             puzzlePhoto: {
-                enabled: this.getNestedValue('puzzlePhoto.enabled') || false,
-                size: this.getNestedValue('puzzlePhoto.size') || '3x3',
-                coin3x3: this.getNestedValue('puzzlePhoto.coin3x3') || 5,
+                enabled3x3: this.getNestedValue('puzzlePhoto.enabled3x3') !== undefined ? this.getNestedValue('puzzlePhoto.enabled3x3') : true,
+                enabled4x4: this.getNestedValue('puzzlePhoto.enabled4x4') !== undefined ? this.getNestedValue('puzzlePhoto.enabled4x4') : true,
+                coin3x3: this.getNestedValue('puzzlePhoto.coin3x3') || 1,
                 coin4x4: this.getNestedValue('puzzlePhoto.coin4x4') || 10
             }
         };
