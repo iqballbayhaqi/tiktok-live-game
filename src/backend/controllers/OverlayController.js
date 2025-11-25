@@ -110,6 +110,11 @@ class OverlayController {
         this.serveOverlay(req, res, 'jedagjedug');
     }
 
+    // GET /live/puzzle-photo/:id
+    servePuzzlePhoto(req, res) {
+        this.serveOverlay(req, res, 'puzzle-photo');
+    }
+
     // GET /live/chat/:id
     serveChat(req, res) {
         this.serveOverlay(req, res, 'chat');

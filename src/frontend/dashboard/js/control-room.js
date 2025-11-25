@@ -174,6 +174,12 @@ function updateGiftEffectOverlayLinks(liveCode) {
         overlayLinkJedagJedug.href = `${baseUrl}/live/jedagjedug/${liveCode}`;
     }
     
+    // Update Puzzle Photo overlay link
+    const overlayLinkPuzzlePhoto = document.getElementById('overlay-link-puzzle-photo');
+    if (overlayLinkPuzzlePhoto) {
+        overlayLinkPuzzlePhoto.href = `${baseUrl}/live/puzzle-photo/${liveCode}`;
+    }
+    
     // Update Chat overlay link
     const overlayLinkChat = document.getElementById('overlay-link-chat');
     if (overlayLinkChat) {

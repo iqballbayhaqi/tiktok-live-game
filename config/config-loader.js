@@ -47,6 +47,12 @@ const defaultConfig = {
             { name: 'Indigo', primary: '#667eea', secondary: '#764ba2' },
             { name: 'Teal', primary: '#0ba360', secondary: '#3cba92' }
         ]
+    },
+    puzzlePhoto: {
+        enabled: true,
+        size: '3x3',
+        coin3x3: 1,
+        coin4x4: 10
     }
 };
 
@@ -82,8 +88,12 @@ function reloadConfigFromServer() {
                     throw new Error('Config file not found');
                 })
                 .then(data => {
+                    console.log('data config reload:', data);
+                    
                     const config = data.config || data;
                     OverlayConfig = mergeConfig(config);
+                    console.log('OverlayConfig:', OverlayConfig);
+                    
                     syncConfigFlags();
                     if (typeof window !== 'undefined') {
                         window.OverlayConfig = OverlayConfig;

@@ -81,13 +81,17 @@
         "gifts": [],
         "coinMin": null,
         "coinMax": null,
-        "duration": 19691,
         "centerX": null,
         "centerY": null,
-        "musicPath": "/assets/music/jedag-jedug2.mp3",
+        "musicPath": "/assets/music/jedag-jedug.mp3",
         "disco": {
           "enabled": false
         }
+      },
+      "puzzlePhoto": {
+        "size": "3x3",
+        "coin3x3": 5,
+        "coin4x4": 10
       }
     }
   }

@@ -17,6 +17,9 @@ router.get('/firework/:id', validateLiveCodeIdParam, OverlayController.serveFire
 // GET /live/jedagjedug/:id
 router.get('/jedagjedug/:id', validateLiveCodeIdParam, OverlayController.serveJedagJedug.bind(OverlayController));
 
+// GET /live/puzzle-photo/:id
+router.get('/puzzle-photo/:id', validateLiveCodeIdParam, OverlayController.servePuzzlePhoto.bind(OverlayController));
+
 // GET /live/chat/:id
 router.get('/chat/:id', validateLiveCodeIdParam, OverlayController.serveChat.bind(OverlayController));
 
