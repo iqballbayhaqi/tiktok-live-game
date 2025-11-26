@@ -170,3 +170,11 @@
     top: -80px;
     left: 0;
 }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .queue-avatar {
+        width: 40px;
+        height: 40px;
+    }
+}

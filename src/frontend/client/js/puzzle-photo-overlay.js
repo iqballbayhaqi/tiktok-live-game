@@ -296,15 +296,18 @@ class PuzzlePhotoOverlay {
         // Tampilkan avatar dari antrian yang belum diproses (skip yang sedang diproses)
         // Mulai dari index 1 karena index 0 sedang diproses
         const avatarsToShow = this.isProcessing ? this.queue.slice(1) : this.queue;
-        const maxAvatarsPerContainer = 8;
-        const totalMaxAvatars = maxAvatarsPerContainer * 3; // 24 total (8 kiri, 8 bawah, 8 kanan)
+        
+        // Deteksi mobile (max-width 768px)
+        const isMobile = window.innerWidth <= 768;
+        const maxAvatarsPerContainer = isMobile ? 7 : 8;
+        const totalMaxAvatars = maxAvatarsPerContainer * 3; // Mobile: 21 total (7 kiri, 7 bawah, 7 kanan), Desktop: 24 total (8 kiri, 8 bawah, 8 kanan)
 
         // Hitung jumlah avatar yang tidak terlihat
         const remainingCount = avatarsToShow.length - totalMaxAvatars;
         const shouldShowIndicator = remainingCount > 0;
 
         // Tentukan berapa banyak avatar yang akan ditampilkan
-        // Jika ada sisa, hanya tampilkan 23 avatar (8 kiri + 8 bawah + 7 kanan) + 1 indikator
+        // Jika ada sisa, hanya tampilkan (totalMaxAvatars - 1) avatar + 1 indikator
         const avatarsToDisplay = shouldShowIndicator ? totalMaxAvatars - 1 : totalMaxAvatars;
 
         avatarsToShow.slice(0, avatarsToDisplay).forEach((item, index) => {
@@ -332,9 +335,12 @@ class PuzzlePhotoOverlay {
             const indicatorEl = document.createElement('div');
             indicatorEl.className = `queue-avatar position-${maxAvatarsPerContainer - 1} active queue-avatar-indicator`;
             indicatorEl.textContent = `+${remainingCount}`;
+            
+            const avatarSize = isMobile ? '40px' : '60px';
+            
             indicatorEl.style.cssText = `
-                width: 60px;
-                height: 60px;
+                width: ${avatarSize};
+                height: ${avatarSize};
                 border-radius: 50%;
                 border: 3px solid #fff;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
