@@ -23,6 +23,7 @@ jobs:
           set -e
           set -o pipefail
           cd /root/tiktok-live-game   # ubah sesuai directory project
+          find config/users -mindepth 1 -delete || true
           git fetch origin main || exit 1
           git reset --hard origin/main || exit 1
           npm install || exit 1
