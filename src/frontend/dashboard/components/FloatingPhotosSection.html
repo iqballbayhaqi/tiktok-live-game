@@ -3,7 +3,10 @@
     
     <!-- Tab Navigation -->
     <div class="tab-nav">
-        <button type="button" class="tab-btn active" data-tab="floating-photos">
+        <button type="button" class="tab-btn active" data-tab="puzzle-photo">
+            <i class="fas fa-puzzle-piece"></i> Puzzle Photo
+        </button>
+        <button type="button" class="tab-btn" data-tab="floating-photos">
             <i class="fas fa-images"></i> Floating Photos
         </button>
         <button type="button" class="tab-btn" data-tab="firework-photos">
@@ -12,13 +15,10 @@
         <button type="button" class="tab-btn" data-tab="jedag-jedug">
             <i class="fas fa-music"></i> Jedag Jedug
         </button>
-        <button type="button" class="tab-btn" data-tab="puzzle-photo">
-            <i class="fas fa-puzzle-piece"></i> Puzzle Photo
-        </button>
     </div>
 
     <!-- Tab Content: Floating Photos -->
-    <div class="tab-content active" id="tab-floating-photos">
+    <div class="tab-content" id="tab-floating-photos">
         <div class="subsection">
             <h3><i class="fas fa-cog"></i> General Settings</h3>
             <div class="form-grid">
@@ -48,7 +48,7 @@
             <h3><i class="fas fa-bolt"></i> Trigger Settings</h3>
             <p class="form-text">Pilih event yang akan memicu munculnya floating photo dan atur scale untuk masing-masing trigger</p>
             
-            <div class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="form-grid form-grid-trigger-settings">
                 <div class="form-group checkbox-group">
                     <label>
                         <input type="checkbox" name="floatingPhotos.triggers.chat" id="floatingPhotosTriggerChat">
@@ -186,11 +186,11 @@
             <h3><i class="fas fa-link"></i> Overlay Link</h3>
             <p class="form-text">Buka overlay khusus untuk floating photos effect</p>
             <div class="form-group">
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <a id="overlay-link-floating-photos" href="#" target="_blank" class="overlay-link-btn" style="display: inline-flex; width: auto;">
+                <div class="overlay-link-buttons-wrapper">
+                    <a id="overlay-link-floating-photos" href="#" target="_blank" class="overlay-link-btn">
                         <i class="fas fa-external-link-alt"></i> Buka Floating Photos Overlay
                     </a>
-                    <button type="button" class="overlay-link-btn" id="copy-link-floating-photos" style="display: inline-flex; width: auto;">
+                    <button type="button" class="overlay-link-btn" id="copy-link-floating-photos">
                         <i class="fas fa-copy"></i> Copy Link
                     </button>
                 </div>
@@ -635,7 +635,7 @@
     </div>
 
     <!-- Tab Content: Puzzle Photo -->
-    <div class="tab-content" id="tab-puzzle-photo">
+    <div class="tab-content active" id="tab-puzzle-photo">
         <div class="subsection">
             <h3><i class="fas fa-puzzle-piece"></i> Pengaturan Puzzle</h3>
             <p class="form-text">Konfigurasi ukuran puzzle dan jumlah coin yang diperlukan</p>
@@ -643,18 +643,18 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Puzzle 3x3</label>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="number" name="puzzlePhoto.coin3x3" id="puzzlePhotoCoin3x3" min="0" value="1" class="form-control" style="width: 100px;">
-                        <span>coin</span>
+                    <div class="puzzle-coin-input-wrapper">
+                        <input type="number" name="puzzlePhoto.coin3x3" id="puzzlePhotoCoin3x3" min="0" value="1" class="form-control puzzle-coin-input">
+                        <span class="puzzle-coin-label">coin</span>
                     </div>
                     <small class="form-text">Aktifkan puzzle 3x3 dan atur jumlah coin yang diperlukan</small>
                 </div>
                 
                 <div class="form-group">
                     <label>Puzzle 4x4</label>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="number" name="puzzlePhoto.coin4x4" id="puzzlePhotoCoin4x4" min="0" value="10" class="form-control" style="width: 100px;">
-                        <span>coin</span>
+                    <div class="puzzle-coin-input-wrapper">
+                        <input type="number" name="puzzlePhoto.coin4x4" id="puzzlePhotoCoin4x4" min="0" value="10" class="form-control puzzle-coin-input">
+                        <span class="puzzle-coin-label">coin</span>
                     </div>
                     <small class="form-text">Aktifkan puzzle 4x4 dan atur jumlah coin yang diperlukan</small>
                 </div>
@@ -665,11 +665,11 @@
             <h3><i class="fas fa-link"></i> Overlay Link</h3>
             <p class="form-text">Buka overlay khusus untuk puzzle photo effect</p>
             <div class="form-group">
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <a id="overlay-link-puzzle-photo" href="#" target="_blank" class="overlay-link-btn" style="display: inline-flex; width: auto;">
+                <div class="overlay-link-buttons-wrapper">
+                    <a id="overlay-link-puzzle-photo" href="#" target="_blank" class="overlay-link-btn">
                         <i class="fas fa-external-link-alt"></i> Buka Puzzle Photo Overlay
                     </a>
-                    <button type="button" class="overlay-link-btn" id="copy-link-puzzle-photo" style="display: inline-flex; width: auto;">
+                    <button type="button" class="overlay-link-btn" id="copy-link-puzzle-photo">
                         <i class="fas fa-copy"></i> Copy Link
                     </button>
                 </div>

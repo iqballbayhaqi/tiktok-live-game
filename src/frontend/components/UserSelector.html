@@ -1,9 +1,9 @@
 <section id="users" class="config-section active">
     <h2><i class="fas fa-users"></i> User Management</h2>
     <div class="user-selector-wrapper">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <div class="user-selector-header">
             <label for="user-selector" class="user-selector-label">Pilih User:</label>
-            <button id="add-user-btn" class="btn btn-primary btn-small" style="margin-left: auto;">
+            <button id="add-user-btn" class="btn btn-primary btn-small">
                 <i class="fas fa-plus"></i> Tambah User
             </button>
         </div>
@@ -12,23 +12,27 @@
         </select>
         <div id="user-info" class="user-info" style="display: none;">
             <div class="user-info-item">
-                <strong>Live Code:</strong> 
-                <span id="user-live-code">-</span>
-                <a id="overlay-link" href="#" target="_blank" class="overlay-link"><i class="fas fa-external-link-alt"></i> Buka Overlay</a>
+                <div class="user-info-label">Live Code:</div>
+                <div class="user-info-value">
+                    <span id="user-live-code">-</span>
+                    <a id="overlay-link" href="#" target="_blank" class="overlay-link"><i class="fas fa-external-link-alt"></i> Buka Overlay</a>
+                </div>
             </div>
-            <div class="user-info-item" style="margin-top: 10px;">
-                <strong>Status TikTok:</strong>
-                <span id="tiktok-status" class="status-badge status-disconnected">Tidak Terhubung</span>
-                <button id="tiktok-toggle-btn" class="btn btn-primary btn-small" style="margin-left: auto;">
-                    <i class="fas fa-play"></i> Start
-                </button>
+            <div class="user-info-item">
+                <div class="user-info-label">Status TikTok:</div>
+                <div class="user-info-value">
+                    <span id="tiktok-status" class="status-badge status-disconnected">Tidak Terhubung</span>
+                    <button id="tiktok-toggle-btn" class="btn btn-primary btn-small">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                </div>
             </div>
-            <div class="user-info-item" style="margin-top: 10px;">
-                <button id="open-live-tiktok-btn" class="btn btn-secondary btn-small" style="width: 100%;">
+            <div class="user-info-item user-info-button-full">
+                <button id="open-live-tiktok-btn" class="btn btn-secondary btn-small">
                     <i class="fab fa-tiktok"></i> Buka Live TikTok
                 </button>
             </div>
-            <div class="user-info-item" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(254, 44, 85, 0.3);">
+            <div class="user-info-item user-info-button-full user-info-divider">
                 <button id="delete-user-btn" class="btn btn-danger btn-small">
                     <i class="fas fa-trash"></i> Hapus User
                 </button>

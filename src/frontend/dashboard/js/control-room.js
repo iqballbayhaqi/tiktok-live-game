@@ -512,12 +512,24 @@ function initTabNavigation() {
         }
     });
 
-    // Ensure first tab is active on load
-    const firstTabBtn = floatingPhotosSection.querySelector('.tab-btn[data-tab="floating-photos"]');
-    const firstTabContent = document.getElementById('tab-floating-photos');
-    if (firstTabBtn && firstTabContent) {
-        firstTabBtn.classList.add('active');
-        firstTabContent.classList.add('active');
+    // Ensure active tab from HTML is properly set (puzzle-photo is default)
+    const activeTabBtn = floatingPhotosSection.querySelector('.tab-btn.active');
+    if (activeTabBtn) {
+        const activeTabId = activeTabBtn.getAttribute('data-tab');
+        if (activeTabId) {
+            const activeTabContent = document.getElementById(`tab-${activeTabId}`);
+            if (activeTabContent) {
+                activeTabContent.classList.add('active');
+            }
+        }
+    } else {
+        // Fallback: if no active tab in HTML, use puzzle-photo as default
+        const defaultTabBtn = floatingPhotosSection.querySelector('.tab-btn[data-tab="puzzle-photo"]');
+        const defaultTabContent = document.getElementById('tab-puzzle-photo');
+        if (defaultTabBtn && defaultTabContent) {
+            defaultTabBtn.classList.add('active');
+            defaultTabContent.classList.add('active');
+        }
     }
 }
 

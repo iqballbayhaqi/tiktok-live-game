@@ -89,8 +89,9 @@
         }
       },
       "puzzlePhoto": {
-        "size": "3x3",
-        "coin3x3": 5,
+        "enabled3x3": true,
+        "enabled4x4": true,
+        "coin3x3": 1,
         "coin4x4": 10
       }
     }
