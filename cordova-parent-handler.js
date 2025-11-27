@@ -1,0 +1,71 @@
+// Handler untuk parent window di Cordova
+// File ini harus di-include di index.html Cordova (parent window)
+
+(function() {
+    'use strict';
+    
+    // Tunggu sampai Cordova siap
+    document.addEventListener('deviceready', function() {
+        console.log('📱 Cordova ready, setting up iframe message handler');
+        setupIframeMessageHandler();
+    }, false);
+    
+    // Jika deviceready sudah terjadi atau tidak di Cordova, setup langsung
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setupIframeMessageHandler();
+    } else {
+        document.addEventListener('DOMContentLoaded', setupIframeMessageHandler);
+    }
+    
+    function setupIframeMessageHandler() {
+        // Listen untuk postMessage dari iframe
+        window.addEventListener('message', function(event) {
+            // Untuk keamanan, bisa validasi origin di sini
+            // if (event.origin !== 'https://tiktok-play.gatradigital.com') return;
+            
+            if (event.data && event.data.type === 'openInAppBrowser') {
+                const url = event.data.url;
+                console.log('📨 Received message to open InAppBrowser:', url);
+                
+                if (url) {
+                    openInAppBrowser(url);
+                }
+            }
+        }, false);
+        
+        console.log('✅ Iframe message handler setup');
+    }
+    
+    function openInAppBrowser(url) {
+        try {
+            // Deteksi Cordova
+            if (window.cordova || window.PhoneGap) {
+                console.log('📱 Opening with Cordova InAppBrowser');
+                
+                // Cara 1: Gunakan window.open (akan otomatis menggunakan InAppBrowser jika plugin terpasang)
+                const ref = window.open(url, '_blank', 'location=yes,zoom=no,toolbar=yes');
+                
+                if (ref) {
+                    console.log('✅ InAppBrowser opened');
+                    return;
+                }
+                
+                // Cara 2: Gunakan cordova.InAppBrowser langsung jika tersedia
+                if (window.cordova && window.cordova.InAppBrowser) {
+                    window.cordova.InAppBrowser.open(url, '_blank', 'location=yes,zoom=no,toolbar=yes');
+                    console.log('✅ InAppBrowser opened via cordova.InAppBrowser');
+                    return;
+                }
+            }
+            
+            // Fallback ke browser normal
+            console.log('🌐 Opening with default browser');
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('❌ Error opening InAppBrowser:', error);
+            // Fallback
+            window.open(url, '_blank');
+        }
+    }
+})();
+

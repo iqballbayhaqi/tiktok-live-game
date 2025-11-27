@@ -152,36 +152,119 @@ async function handleUserChange(username) {
 
 // Helper function untuk membuka link dengan Cordova InAppBrowser jika tersedia
 function openOverlayLink(url) {
-    // Deteksi jika aplikasi berjalan di Cordova
-    if (window.cordova && typeof cordova !== 'undefined' && cordova.InAppBrowser) {
-        // Gunakan Cordova InAppBrowser
-        cordova.InAppBrowser.open(url, '_blank', 'location=yes');
-    } else {
-        // Fallback ke browser normal
-        window.open(url, '_blank');
+    console.log('🔗 Opening overlay link:', url);
+    
+    // Deteksi jika berjalan di dalam iframe
+    const isInIframe = window.self !== window.top;
+    
+    // Deteksi jika aplikasi berjalan di Cordova (cek di window ini atau parent/top window)
+    let cordovaObj = null;
+    let topWindow = null;
+    
+    try {
+        // Coba akses top window jika di iframe
+        if (isInIframe) {
+            topWindow = window.top;
+            cordovaObj = topWindow.cordova || topWindow.PhoneGap;
+            console.log('📦 Running in iframe, checking parent window for Cordova');
+        } else {
+            cordovaObj = window.cordova || window.PhoneGap;
+        }
+    } catch (e) {
+        // Cross-origin error, tidak bisa akses parent
+        console.warn('⚠️ Cannot access parent window (cross-origin):', e);
+        cordovaObj = window.cordova || window.PhoneGap;
     }
+    
+    const isCordova = !!cordovaObj;
+    
+    if (isCordova) {
+        console.log('📱 Cordova detected, using InAppBrowser');
+        try {
+            // Jika di iframe, gunakan top window untuk membuka InAppBrowser
+            const targetWindow = isInIframe && topWindow ? topWindow : window;
+            
+            // Di Cordova, window.open() dengan URL http/https akan otomatis menggunakan InAppBrowser
+            // jika plugin InAppBrowser terpasang
+            const ref = targetWindow.open(url, '_blank', 'location=yes,zoom=no,toolbar=yes');
+            if (ref) {
+                console.log('✅ InAppBrowser opened');
+                return;
+            } else {
+                console.warn('⚠️ window.open returned null, trying alternative method');
+                // Alternatif: coba akses langsung jika tersedia
+                if (cordovaObj && cordovaObj.InAppBrowser) {
+                    cordovaObj.InAppBrowser.open(url, '_blank', 'location=yes,zoom=no,toolbar=yes');
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error opening InAppBrowser:', error);
+            // Fallback: coba postMessage ke parent jika di iframe
+            if (isInIframe) {
+                try {
+                    window.parent.postMessage({
+                        type: 'openInAppBrowser',
+                        url: url
+                    }, '*');
+                    console.log('📤 Sent postMessage to parent');
+                    return;
+                } catch (e) {
+                    console.error('❌ Error sending postMessage:', e);
+                }
+            }
+        }
+    }
+    
+    // Fallback ke browser normal
+    console.log('🌐 Using default browser');
+    const targetWindow = isInIframe && topWindow ? topWindow : window;
+    targetWindow.open(url, '_blank');
 }
 
 // Setup overlay link click handler
 function setupOverlayLinkHandler(linkElement) {
-    if (!linkElement) return;
+    if (!linkElement) {
+        console.warn('⚠️ Link element not found');
+        return;
+    }
     
     // Hapus event listener lama jika ada (dengan flag untuk mencegah duplikasi)
     if (linkElement._overlayLinkHandlerSetup) {
+        console.log('ℹ️ Handler already setup for:', linkElement.id);
         return; // Sudah di-setup sebelumnya
     }
     
-    // Tambahkan event listener
-    linkElement.addEventListener('click', (e) => {
+    // Hapus target="_blank" untuk mencegah browser default behavior
+    linkElement.removeAttribute('target');
+    
+    // Buat handler function yang bisa di-remove jika perlu
+    const clickHandler = function(e) {
         e.preventDefault();
-        const url = linkElement.href;
-        if (url && url !== '#') {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const url = this.href || this.getAttribute('href');
+        console.log('🖱️ Link clicked:', url, 'Element:', this.id);
+        if (url && url !== '#' && url !== 'javascript:void(0)' && url.trim() !== '') {
             openOverlayLink(url);
+        } else {
+            console.warn('⚠️ Invalid URL:', url);
         }
-    });
+        return false;
+    };
+    
+    // Simpan handler untuk bisa di-remove nanti jika perlu
+    linkElement._overlayLinkClickHandler = clickHandler;
+    
+    // Tambahkan event listener dengan capture untuk memastikan dijalankan lebih awal
+    linkElement.addEventListener('click', clickHandler, true);
+    
+    // Juga tambahkan onclick sebagai backup
+    linkElement.onclick = clickHandler;
     
     // Tandai sudah di-setup
     linkElement._overlayLinkHandlerSetup = true;
+    console.log('✅ Overlay link handler setup for:', linkElement.id, 'URL:', linkElement.href);
 }
 
 // Update overlay links in Gift Effect sections
