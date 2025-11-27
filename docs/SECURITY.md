@@ -7,7 +7,7 @@ Dokumentasi ini menjelaskan implementasi keamanan yang telah diterapkan pada apl
 ### 1. Security Headers (Helmet.js)
 - **Content Security Policy (CSP)**: Membatasi sumber daya yang dapat dimuat
 - **X-Content-Type-Options**: Mencegah MIME type sniffing
-- **X-Frame-Options**: Mencegah clickjacking
+- **X-Frame-Options**: Dinonaktifkan untuk mengizinkan embedding dalam iframe
 - **X-XSS-Protection**: Perlindungan XSS tambahan
 - **Strict-Transport-Security**: HTTPS enforcement (production)
 

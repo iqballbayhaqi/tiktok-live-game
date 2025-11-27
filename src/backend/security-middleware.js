@@ -13,11 +13,12 @@ const securityHeaders = helmet({
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // unsafe-inline/eval diperlukan untuk beberapa overlay
             imgSrc: ["'self'", "data:", "https:", "http:"], // Allow external images untuk avatar/gift images
             connectSrc: ["'self'", "https:", "http:"], // Allow SSE connections
-            frameSrc: ["'none'"],
+            frameSrc: ["*"], // Allow embedding dalam iframe dari semua origin
             objectSrc: ["'none'"],
             upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
         }
     },
+    frameguard: false, // Disable X-Frame-Options untuk allow embedding
     crossOriginEmbedderPolicy: false, // Disable untuk compatibility dengan overlay
     crossOriginResourcePolicy: { policy: "cross-origin" } // Allow untuk assets
 });
