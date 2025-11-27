@@ -150,6 +150,40 @@ async function handleUserChange(username) {
     await tiktokConnector.loadState();
 }
 
+// Helper function untuk membuka link dengan Cordova InAppBrowser jika tersedia
+function openOverlayLink(url) {
+    // Deteksi jika aplikasi berjalan di Cordova
+    if (window.cordova && typeof cordova !== 'undefined' && cordova.InAppBrowser) {
+        // Gunakan Cordova InAppBrowser
+        cordova.InAppBrowser.open(url, '_blank', 'location=yes');
+    } else {
+        // Fallback ke browser normal
+        window.open(url, '_blank');
+    }
+}
+
+// Setup overlay link click handler
+function setupOverlayLinkHandler(linkElement) {
+    if (!linkElement) return;
+    
+    // Hapus event listener lama jika ada (dengan flag untuk mencegah duplikasi)
+    if (linkElement._overlayLinkHandlerSetup) {
+        return; // Sudah di-setup sebelumnya
+    }
+    
+    // Tambahkan event listener
+    linkElement.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = linkElement.href;
+        if (url && url !== '#') {
+            openOverlayLink(url);
+        }
+    });
+    
+    // Tandai sudah di-setup
+    linkElement._overlayLinkHandlerSetup = true;
+}
+
 // Update overlay links in Gift Effect sections
 function updateGiftEffectOverlayLinks(liveCode) {
     if (!liveCode) return;
@@ -160,42 +194,49 @@ function updateGiftEffectOverlayLinks(liveCode) {
     const overlayLinkFloatingPhotos = document.getElementById('overlay-link-floating-photos');
     if (overlayLinkFloatingPhotos) {
         overlayLinkFloatingPhotos.href = `${baseUrl}/live/floating-photos/${liveCode}`;
+        setupOverlayLinkHandler(overlayLinkFloatingPhotos);
     }
     
     // Update Firework overlay link
     const overlayLinkFirework = document.getElementById('overlay-link-firework');
     if (overlayLinkFirework) {
         overlayLinkFirework.href = `${baseUrl}/live/firework/${liveCode}`;
+        setupOverlayLinkHandler(overlayLinkFirework);
     }
     
     // Update Jedag Jedug overlay link
     const overlayLinkJedagJedug = document.getElementById('overlay-link-jedagjedug');
     if (overlayLinkJedagJedug) {
         overlayLinkJedagJedug.href = `${baseUrl}/live/jedagjedug/${liveCode}`;
+        setupOverlayLinkHandler(overlayLinkJedagJedug);
     }
     
     // Update Puzzle Photo overlay link
     const overlayLinkPuzzlePhoto = document.getElementById('overlay-link-puzzle-photo');
     if (overlayLinkPuzzlePhoto) {
         overlayLinkPuzzlePhoto.href = `${baseUrl}/live/puzzle-photo/${liveCode}`;
+        setupOverlayLinkHandler(overlayLinkPuzzlePhoto);
     }
     
     // Update Chat overlay link
     const overlayLinkChat = document.getElementById('overlay-link-chat');
     if (overlayLinkChat) {
         overlayLinkChat.href = `${baseUrl}/live/chat/${liveCode}`;
+        setupOverlayLinkHandler(overlayLinkChat);
     }
     
     // Update Follower Alert overlay link
     const overlayLinkFollowerAlert = document.getElementById('overlay-link-follower-alert');
     if (overlayLinkFollowerAlert) {
         overlayLinkFollowerAlert.href = `${baseUrl}/live/follower-alert/${liveCode}`;
+        setupOverlayLinkHandler(overlayLinkFollowerAlert);
     }
     
     // Update Gift Alert overlay link
     const overlayLinkGiftAlert = document.getElementById('overlay-link-gift-alert');
     if (overlayLinkGiftAlert) {
         overlayLinkGiftAlert.href = `${baseUrl}/live/gift-alert/${liveCode}`;
+        setupOverlayLinkHandler(overlayLinkGiftAlert);
     }
 }
 
