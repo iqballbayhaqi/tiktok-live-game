@@ -267,6 +267,95 @@ function setupOverlayLinkHandler(linkElement) {
     console.log('✅ Overlay link handler setup for:', linkElement.id, 'URL:', linkElement.href);
 }
 
+// Copy link to clipboard
+async function copyOverlayLink(url) {
+    if (!url || url === '#' || url === 'javascript:void(0)' || url.trim() === '') {
+        Notification.error('Link tidak valid untuk di-copy');
+        return false;
+    }
+    
+    try {
+        // Coba menggunakan Clipboard API modern
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+            Notification.success('Link berhasil di-copy ke clipboard!');
+            return true;
+        } else {
+            // Fallback untuk browser lama
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    Notification.success('Link berhasil di-copy ke clipboard!');
+                    return true;
+                } else {
+                    throw new Error('Copy command failed');
+                }
+            } catch (err) {
+                document.body.removeChild(textArea);
+                throw err;
+            }
+        }
+    } catch (error) {
+        console.error('Error copying link:', error);
+        Notification.error('Gagal menyalin link ke clipboard');
+        return false;
+    }
+}
+
+// Setup copy link button handler
+function setupCopyLinkHandler(copyButtonId, linkElementId) {
+    const copyButton = document.getElementById(copyButtonId);
+    const linkElement = document.getElementById(linkElementId);
+    
+    if (!copyButton || !linkElement) {
+        console.warn('⚠️ Copy button or link element not found:', copyButtonId, linkElementId);
+        return;
+    }
+    
+    // Hapus event listener lama jika ada
+    if (copyButton._copyLinkHandlerSetup) {
+        console.log('ℹ️ Copy handler already setup for:', copyButtonId);
+        return;
+    }
+    
+    const clickHandler = async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const url = linkElement.href || linkElement.getAttribute('href');
+        console.log('📋 Copy button clicked:', url, 'Element:', copyButtonId);
+        
+        if (url && url !== '#' && url !== 'javascript:void(0)' && url.trim() !== '') {
+            await copyOverlayLink(url);
+        } else {
+            Notification.error('Link belum tersedia. Pastikan user sudah dipilih dan live code sudah diatur.');
+        }
+        
+        return false;
+    };
+    
+    // Simpan handler
+    copyButton._copyLinkClickHandler = clickHandler;
+    
+    // Tambahkan event listener
+    copyButton.addEventListener('click', clickHandler);
+    
+    // Tandai sudah di-setup
+    copyButton._copyLinkHandlerSetup = true;
+    console.log('✅ Copy link handler setup for:', copyButtonId);
+}
+
 // Update overlay links in Gift Effect sections
 function updateGiftEffectOverlayLinks(liveCode) {
     if (!liveCode) return;
@@ -278,6 +367,7 @@ function updateGiftEffectOverlayLinks(liveCode) {
     if (overlayLinkFloatingPhotos) {
         overlayLinkFloatingPhotos.href = `${baseUrl}/live/floating-photos/${liveCode}`;
         setupOverlayLinkHandler(overlayLinkFloatingPhotos);
+        setupCopyLinkHandler('copy-link-floating-photos', 'overlay-link-floating-photos');
     }
     
     // Update Firework overlay link
@@ -285,6 +375,7 @@ function updateGiftEffectOverlayLinks(liveCode) {
     if (overlayLinkFirework) {
         overlayLinkFirework.href = `${baseUrl}/live/firework/${liveCode}`;
         setupOverlayLinkHandler(overlayLinkFirework);
+        setupCopyLinkHandler('copy-link-firework', 'overlay-link-firework');
     }
     
     // Update Jedag Jedug overlay link
@@ -292,6 +383,7 @@ function updateGiftEffectOverlayLinks(liveCode) {
     if (overlayLinkJedagJedug) {
         overlayLinkJedagJedug.href = `${baseUrl}/live/jedagjedug/${liveCode}`;
         setupOverlayLinkHandler(overlayLinkJedagJedug);
+        setupCopyLinkHandler('copy-link-jedagjedug', 'overlay-link-jedagjedug');
     }
     
     // Update Puzzle Photo overlay link
@@ -299,6 +391,7 @@ function updateGiftEffectOverlayLinks(liveCode) {
     if (overlayLinkPuzzlePhoto) {
         overlayLinkPuzzlePhoto.href = `${baseUrl}/live/puzzle-photo/${liveCode}`;
         setupOverlayLinkHandler(overlayLinkPuzzlePhoto);
+        setupCopyLinkHandler('copy-link-puzzle-photo', 'overlay-link-puzzle-photo');
     }
     
     // Update Chat overlay link
@@ -306,6 +399,7 @@ function updateGiftEffectOverlayLinks(liveCode) {
     if (overlayLinkChat) {
         overlayLinkChat.href = `${baseUrl}/live/chat/${liveCode}`;
         setupOverlayLinkHandler(overlayLinkChat);
+        setupCopyLinkHandler('copy-link-chat', 'overlay-link-chat');
     }
     
     // Update Follower Alert overlay link
@@ -313,6 +407,7 @@ function updateGiftEffectOverlayLinks(liveCode) {
     if (overlayLinkFollowerAlert) {
         overlayLinkFollowerAlert.href = `${baseUrl}/live/follower-alert/${liveCode}`;
         setupOverlayLinkHandler(overlayLinkFollowerAlert);
+        setupCopyLinkHandler('copy-link-follower-alert', 'overlay-link-follower-alert');
     }
     
     // Update Gift Alert overlay link
@@ -320,6 +415,7 @@ function updateGiftEffectOverlayLinks(liveCode) {
     if (overlayLinkGiftAlert) {
         overlayLinkGiftAlert.href = `${baseUrl}/live/gift-alert/${liveCode}`;
         setupOverlayLinkHandler(overlayLinkGiftAlert);
+        setupCopyLinkHandler('copy-link-gift-alert', 'overlay-link-gift-alert');
     }
 }
 
